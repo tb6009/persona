@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>엠앤에서 FGI 시뮬레이터 — 그룹 토론</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* TOP BAR */
+    .topbar { background: #1a2e4a; color: white; padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .topbar-logo { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; color: #7eb3e0; text-transform: uppercase; }
+    .topbar-title { font-size: 15px; font-weight: 600; }
+    .topbar-badge { background: #4a3a7a; font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+    .ai-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8dc46a; font-weight: 600; margin-left: auto; }
+    .ai-dot { width: 7px; height: 7px; background: #8dc46a; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: white; border-radius: 16px; padding: 36px; width: 440px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .modal-logo { font-size: 28px; text-align: center; margin-bottom: 8px; }
+    .modal h2 { font-size: 20px; font-weight: 700; color: #1a2e4a; text-align: center; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: #7a8fa5; text-align: center; margin-bottom: 28px; line-height: 1.6; }
+    .modal-label { font-size: 12px; font-weight: 700; color: #5a7fa0; margin-bottom: 6px; letter-spacing: 0.05em; }
+    .modal-input { width: 100%; border: 2px solid #d0dce8; border-radius: 10px; padding: 12px 14px; font-size: 14px; font-family: monospace; outline: none; transition: border-color 0.15s; color: #1a2e4a; }
+    .modal-input:focus { border-color: #4a9fe0; }
+    .modal-hint { font-size: 11px; color: #9aafbe; margin-top: 6px; margin-bottom: 20px; }
+    .modal-hint a { color: #4a9fe0; text-decoration: none; }
+    .modal-btn { width: 100%; background: #1a2e4a; color: white; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+    .modal-btn:hover { background: #2e4f7a; }
+    .modal-error { color: #e07a5f; font-size: 12px; margin-top: 8px; display: none; }
+    .modal-success { color: #22c55e; font-size: 12px; margin-top: 8px; display: none; }
+    .test-btn { width: 100%; background: white; color: #1a2e4a; border: 2px solid #1a2e4a; border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+    .test-btn:hover { background: #f0f4f8; }
+    .test-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .save-key-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 12px; color: #7a8fa5; }
+    .save-key-row input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; }
+    .key-status { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 12px; color: #16a34a; margin-bottom: 12px; display: none; }
+
+    /* LAYOUT */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* PARTICIPANT BAR */
+    .participant-bar { background: white; border-bottom: 1px solid #e8edf2; padding: 10px 24px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; flex-wrap: wrap; }
+    .participant-bar-label { font-size: 11px; font-weight: 700; color: #9aafbe; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+    .participant-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: default; border: 2px solid transparent; transition: all 0.15s; }
+    .participant-chip.speaking { transform: scale(1.06); box-shadow: 0 0 0 2px; }
+    .participant-chip .chip-emoji { font-size: 15px; }
+    .bar-right { margin-left: auto; display: flex; gap: 8px; }
+    .header-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; background: white; border: 1px solid #d0dce8; color: #7a8fa5; }
+    .header-btn:hover { background: #f5f7fa; }
+    .export-btn-top { border-color: #4a9fe0; color: #2e6da4; }
+    .export-btn-top:hover { background: #eef3f8; }
+
+    /* CHAT AREA */
+    .chat-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 4px; }
+    .welcome-msg { text-align: center; padding: 40px 20px; color: #9aafbe; }
+    .welcome-msg .emoji { font-size: 48px; display: block; margin-bottom: 12px; }
+    .welcome-msg h3 { font-size: 16px; color: #5a7fa0; margin-bottom: 8px; }
+    .welcome-msg p { font-size: 13px; line-height: 1.7; }
+    .welcome-msg .tip { margin-top: 16px; font-size: 12px; background: #f0f4f8; border-radius: 10px; padding: 10px 14px; color: #5a7fa0; text-align: left; line-height: 1.8; }
+
+    /* MESSAGES */
+    .msg-group { margin-bottom: 12px; }
+    .msg-group.moderator { align-items: flex-end; display: flex; flex-direction: column; }
+    .msg-group.persona-msg { display: flex; flex-direction: column; }
+    .msg-sender { font-size: 11px; color: #9aafbe; margin-bottom: 3px; padding: 0 4px; }
+    .msg-group.moderator .msg-sender { text-align: right; }
+    .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
+    .msg-group.moderator .bubble-row { flex-direction: row-reverse; }
+    .msg-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .bubble { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.65; max-width: 65%; }
+    .msg-group.moderator .bubble { background: #1a2e4a; color: white; border-bottom-right-radius: 4px; }
+    .msg-group.persona-msg .bubble { background: white; color: #1a2e4a; border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .msg-time { font-size: 10px; color: #c0ccd6; margin-top: 3px; padding: 0 4px; }
+    .msg-group.moderator .msg-time { text-align: right; }
+
+    /* TYPING */
+    .typing-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .typing-bubble { display: flex; gap: 4px; padding: 10px 14px; background: white; border-radius: 16px; border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: #9aafbe; animation: blink 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
+
+    /* DIVIDER */
+    .topic-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0 8px; }
+    .topic-divider-line { flex: 1; height: 1px; background: #e8edf2; }
+    .topic-divider-text { font-size: 11px; color: #9aafbe; white-space: nowrap; }
+
+    /* INPUT */
+    .input-section { background: white; border-top: 1px solid #e8edf2; padding: 12px 24px; flex-shrink: 0; }
+    .input-hint { font-size: 11px; color: #9aafbe; margin-bottom: 7px; }
+    .input-hint code { background: #f0f4f8; padding: 1px 5px; border-radius: 3px; color: #5a7fa0; }
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .input-box { flex: 1; border: 1px solid #d0dce8; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-family: inherit; resize: none; outline: none; max-height: 100px; line-height: 1.5; color: #1a2e4a; transition: border-color 0.15s; }
+    .input-box:focus { border-color: #4a9fe0; }
+    .send-btn { width: 42px; height: 42px; border-radius: 50%; background: #1a2e4a; border: none; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+    .send-btn:hover { background: #2e4f7a; }
+    .send-btn:disabled { background: #c0ccd6; cursor: not-allowed; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d0dce8; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-logo">🎙️</div>
+    <h2>FGI 시뮬레이터</h2>
+    <p class="modal-sub">5명의 페르소나가 함께 토론합니다.<br>Anthropic API 키를 입력해 시작하세요.</p>
+    <div class="modal-label">ANTHROPIC API KEY</div>
+    <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-ant-api03-..." />
+    <div class="modal-hint">
+      API 키는 <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>에서 발급받을 수 있어요.
+    </div>
+    <div class="key-status" id="keyStatus">✅ 저장된 키가 있어요. 그냥 시작하거나 새 키를 입력하세요.</div>
+    <div class="save-key-row">
+      <input type="checkbox" id="saveKeyCheck" checked>
+      <label for="saveKeyCheck">이 브라우저에 설정 저장</label>
+    </div>
+    <div style="border-top:1px solid #e8edf2;margin:14px 0 12px;padding-top:14px;">
+      <div class="modal-label">CLOUDFLARE 프록시 URL <span style="font-size:10px;color:#9aafbe;font-weight:400">— CORS 오류 해결 필수</span></div>
+      <input type="text" class="modal-input" id="workerUrlInput" placeholder="https://mnserve-proxy.사용자명.workers.dev" />
+      <div class="modal-hint" style="margin-bottom:0;">GitHub Pages에서 CORS 오류 방지용 Cloudflare Worker URL을 입력하세요.</div>
+    </div>
+    <div class="modal-error" id="modalError"></div>
+    <div class="modal-success" id="modalSuccess"></div>
+    <button class="test-btn" id="testBtn" onclick="testConnection()">🔌 연결 테스트</button>
+    <button class="modal-btn" onclick="startApp()">시작하기 →</button>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="index.html" style="font-size:11px;color:#7eb3e0;text-decoration:none;padding:3px 10px;border:1px solid #3a5a7a;border-radius:6px;margin-right:4px;flex-shrink:0;">← 홈</a>
+  <span class="topbar-logo">M&amp;Serve</span>
+  <span class="topbar-title">FGI 시뮬레이터</span>
+  <span class="topbar-badge">Focus Group Interview</span>
+  <div class="ai-indicator"><div class="ai-dot"></div>Claude AI 연동</div>
+</div>
+
+<!-- PARTICIPANT BAR -->
+<div class="participant-bar">
+  <span class="participant-bar-label">참여자</span>
+  <div id="participantChips"></div>
+  <div class="bar-right">
+    <button class="header-btn" onclick="clearSession()">🔄 세션 초기화</button>
+    <button class="header-btn export-btn-top" onclick="exportFGI()">📋 결과 내보내기</button>
+    <button class="header-btn" onclick="changeApiKey()" style="font-size:10px;">🔑 API 키</button>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="main">
+  <div class="chat-wrap">
+    <div class="messages" id="messages">
+      <div class="welcome-msg">
+        <span class="emoji">🎙️</span>
+        <h3>FGI 시뮬레이터에 오신 걸 환영합니다</h3>
+        <p>5명의 페르소나가 함께 토론에 참여합니다.<br>아래에 주제나 질문을 입력하면 모든 참여자가 의견을 나눕니다.</p>
+        <div class="tip">
+          💡 <strong>사용 팁</strong><br>
+          · 주제를 던지면 → 5명 모두 순서대로 의견 말함<br>
+          · <code>@박지민</code> 처럼 이름 태그하면 → 그 사람만 응답<br>
+          · 이전 대화를 이어받아 자연스럽게 토론 진행
+        </div>
+      </div>
+    </div>
+    <div class="input-section">
+      <div class="input-hint">주제를 던지거나 <code>@이름</code>으로 특정 참여자에게 질문하세요</div>
+      <div class="input-row">
+        <textarea class="input-box" id="inputBox" placeholder="예: 소형가전을 살 때 가장 중요하게 보는 게 뭔가요?" rows="1" disabled></textarea>
+        <button class="send-btn" id="sendBtn" disabled onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let API_KEY = '';
+let WORKER_URL = '';
+let conversationLog = []; // {role, name, content, time}
+let isLoading = false;
+
+// ───────── PERSONA DATA ─────────
+const personas = [
+  {
+    id: 'jimin', name: '박지민', age: 26, job: '스타트업 디자이너',
+    emoji: '👩‍💻', color: '#dbeafe', brand: 'mlida',
+    tagline: '1인가구 · 소형가전 얼리어답터',
+    systemPrompt: `당신은 박지민(26세, 여성)입니다. 서울 성수동 원룸에 혼자 사는 스타트업 디자이너예요.
+지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(이서연 31세 교사, 김하은 28세 포토그래퍼, 최민준 33세 개발자, 정소연 35세 워킹맘)이 함께 있어요.
+
+【말투】구어체, 짧고 직접적, "ㅋㅋ" "ㄹㅇ" "완전" "솔직히" 자주 씀, 이모지 가끔
+
+【배경】소형가전 관심 많음, 밀다 블렌더·에어프라이어 사용 경험, 리뷰 꼼꼼히 봄, 가성비+디자인 둘 다 중요, 원룸이라 공간 제약 큼
+
+【규칙】
+- 박지민으로서만 말할 것. AI라고 밝히지 말 것
+- 다른 참여자 의견에 공감하거나 다른 시각 제시 가능
+- 1~3문장으로 간결하게 (FGI 특성상 짧은 게 자연스러움)
+- 가끔 다른 참여자 의견 언급 가능 ("이서연님 말처럼~", "저는 좀 달라서요~")`
+  },
+  {
+    id: 'seoyeon', name: '이서연', age: 31, job: '초등학교 교사',
+    emoji: '👩‍🏫', color: '#fce7f3', brand: 'mlida',
+    tagline: '2인가구 · 건강식 루틴 지향',
+    systemPrompt: `당신은 이서연(31세, 여성)입니다. 수원에서 남자친구와 동거 중인 초등학교 선생님이에요.
+지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 김하은 28세 포토그래퍼, 최민준 33세 개발자, 정소연 35세 워킹맘)이 함께 있어요.
+
+【말투】차분하고 논리적, 존댓말, "사실은요" "제 경우엔" "근데" 자주 씀
+
+【배경】건강식에 소형가전 적극 활용, 밀다 믹서기 사용 중, 세척 편한 제품 선호, 내구성 중시, 유행 제품에 피로감
+
+【규칙】
+- 이서연으로서만 말할 것
+- 다른 참여자 의견 자연스럽게 수용하거나 다른 관점 제시
+- 1~3문장으로 간결하게`
+  },
+  {
+    id: 'haeun', name: '김하은', age: 28, job: '프리랜서 포토그래퍼',
+    emoji: '📸', color: '#d1fae5', brand: 'ahgreet',
+    tagline: '감성 인테리어 · 주방용품 컬렉터',
+    systemPrompt: `당신은 김하은(28세, 여성)입니다. 마포구 빌라에 혼자 사는 프리랜서 포토그래퍼예요.
+지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 이서연 31세 교사, 최민준 33세 개발자, 정소연 35세 워킹맘)이 함께 있어요.
+
+【말투】감성적, 표현력 풍부, 이모지 즐김, "진짜요?" "대박" "너무 예쁘지 않아요?" 자주 씀
+
+【배경】인스타그램에서 제품 발견 후 구매, ahgreet 팔로우 및 머그컵·접시 구매, 감성+포장도 중시, 가격 부담 있지만 욕심남
+
+【규칙】
+- 김하은으로서만 말할 것
+- 감성적이고 생동감 있게
+- 1~3문장으로 간결하게`
+  },
+  {
+    id: 'minjun', name: '최민준', age: 33, job: 'IT 기업 개발자',
+    emoji: '👨‍💻', color: '#fef3c7', brand: 'ahgreet',
+    tagline: '신혼 준비 · 실용적 선택',
+    systemPrompt: `당신은 최민준(33세, 남성)입니다. 분당에서 내년 결혼을 준비 중인 IT 기업 개발자예요.
+지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 이서연 31세 교사, 김하은 28세 포토그래퍼, 정소연 35세 워킹맘)이 함께 있어요.
+
+【말투】논리적, 건조, "객관적으로" "비교해보면" "데이터상으로는" 자주 씀, 존댓말, 간결
+
+【배경】구매 전 스프레드시트로 비교분석, ahgreet 리뷰 꼼꼼히 확인, 파트너는 디자인 중시·본인은 실용성 중시, A/S 정책 명확한 브랜드 선호
+
+【규칙】
+- 최민준으로서만 말할 것
+- 논리적이고 건조하게
+- 1~3문장으로 간결하게`
+  },
+  {
+    id: 'soyeon', name: '정소연', age: 35, job: '마케터 (워킹맘)',
+    emoji: '👩‍🍳', color: '#ede9fe', brand: 'ahgreet',
+    tagline: '육아 중 홈쿡 · 효율 최우선',
+    systemPrompt: `당신은 정소연(35세, 여성)입니다. 일산에서 남편, 5살 딸과 사는 마케터 워킹맘이에요.
+지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 이서연 31세 교사, 김하은 28세 포토그래퍼, 최민준 33세 개발자)이 함께 있어요.
+
+【말투】바쁘고 현실적, "솔직히 말하면" "시간이 없어서요" "애 때문에" 자주 씀, 존댓말이지만 편안하게
+
+【배경】쿠팡 로켓배송 필수, ahgreet에서 5회 이상 구매, 아이 안전 인증 꼭 확인, 세척 쉬운 것 필수, 퇴근 후 30분 이내 요리
+
+【규칙】
+- 정소연으로서만 말할 것
+- 현실적이고 솔직하게
+- 1~3문장으로 간결하게`
+  }
+];
+
+// ───────── INIT ─────────
+window.addEventListener('DOMContentLoaded', () => {
+  const savedKey = localStorage.getItem('mnserve_api_key');
+  if (savedKey) {
+    document.getElementById('apiKeyInput').value = savedKey;
+    document.getElementById('keyStatus').style.display = 'flex';
+  }
+  const savedWorker = localStorage.getItem('mnserve_worker_url');
+  if (savedWorker) {
+    document.getElementById('workerUrlInput').value = savedWorker;
+  }
+});
+
+function sanitizeKey(raw) {
+  return raw.replace(/[^\x20-\x7E]/g, '').trim();
+}
+function getApiUrl() {
+  const w = document.getElementById('workerUrlInput')?.value.trim() || WORKER_URL;
+  return w || 'https://api.anthropic.com/v1/messages';
+}
+function buildHeaders(key) {
+  const usingProxy = !!(document.getElementById('workerUrlInput')?.value.trim() || WORKER_URL);
+  const h = { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' };
+  if (!usingProxy) h['anthropic-dangerous-direct-browser-access'] = 'true';
+  return h;
+}
+function showModalError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('modalSuccess').style.display = 'none';
+}
+function showModalSuccess(msg) {
+  const el = document.getElementById('modalSuccess');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('modalError').style.display = 'none';
+}
+
+async function testConnection() {
+  const key = sanitizeKey(document.getElementById('apiKeyInput').value);
+  if (!key) { showModalError('API 키를 먼저 입력하세요.'); return; }
+  const btn = document.getElementById('testBtn');
+  btn.disabled = true; btn.textContent = '⏳ 테스트 중...';
+  document.getElementById('modalError').style.display = 'none';
+  document.getElementById('modalSuccess').style.display = 'none';
+  const apiUrl = getApiUrl();
+  const usingProxy = apiUrl !== 'https://api.anthropic.com/v1/messages';
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST', headers: buildHeaders(key),
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 10, messages: [{ role: 'user', content: '안녕' }] })
+    });
+    if (res.ok) showModalSuccess('✅ 연결 성공!' + (usingProxy ? ' (프록시 경유)' : '') + ' 시작하기를 눌러주세요.');
+    else {
+      const data = await res.json().catch(() => ({}));
+      showModalError(`❌ 오류 ${res.status}: ${data.error?.message || '알 수 없는 오류'}`);
+    }
+  } catch (e) {
+    showModalError(usingProxy ? '❌ 프록시 연결 실패: URL을 확인해주세요.' : '❌ CORS 오류: Cloudflare 프록시 URL을 입력해주세요.');
+  }
+  btn.disabled = false; btn.textContent = '🔌 연결 테스트';
+}
+
+function startApp() {
+  const key = sanitizeKey(document.getElementById('apiKeyInput').value);
+  if (!key) { showModalError('API 키를 입력하세요.'); return; }
+  API_KEY = key;
+  const workerInput = document.getElementById('workerUrlInput').value.trim();
+  WORKER_URL = workerInput;
+  if (document.getElementById('saveKeyCheck').checked) {
+    localStorage.setItem('mnserve_api_key', key);
+    workerInput ? localStorage.setItem('mnserve_worker_url', workerInput) : localStorage.removeItem('mnserve_worker_url');
+  }
+  document.getElementById('modal').classList.add('hidden');
+  renderParticipants();
+  document.getElementById('inputBox').disabled = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('inputBox').focus();
+}
+
+function changeApiKey() {
+  API_KEY = ''; WORKER_URL = '';
+  document.getElementById('apiKeyInput').value = '';
+  const sw = localStorage.getItem('mnserve_worker_url');
+  if (sw) document.getElementById('workerUrlInput').value = sw;
+  document.getElementById('modalError').style.display = 'none';
+  document.getElementById('modalSuccess').style.display = 'none';
+  document.getElementById('keyStatus').style.display = 'none';
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+// ───────── PARTICIPANTS ─────────
+function renderParticipants() {
+  const container = document.getElementById('participantChips');
+  container.innerHTML = '';
+  personas.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'participant-chip';
+    chip.id = 'chip-' + p.id;
+    chip.style.background = p.color;
+    chip.style.color = '#1a2e4a';
+    chip.innerHTML = `<span class="chip-emoji">${p.emoji}</span><span>${p.name}</span>`;
+    container.appendChild(chip);
+  });
+}
+
+function setSpeaking(personaId) {
+  document.querySelectorAll('.participant-chip').forEach(c => c.classList.remove('speaking'));
+  if (personaId) {
+    const chip = document.getElementById('chip-' + personaId);
+    if (chip) {
+      chip.classList.add('speaking');
+      chip.style.boxShadow = '';
+    }
+  }
+}
+
+// ───────── MESSAGES ─────────
+function appendTopicDivider(text) {
+  const div = document.createElement('div');
+  div.className = 'topic-divider';
+  div.innerHTML = `<div class="topic-divider-line"></div><div class="topic-divider-text">📌 ${escapeHtml(text.slice(0, 30))}${text.length > 30 ? '...' : ''}</div><div class="topic-divider-line"></div>`;
+  document.getElementById('messages').appendChild(div);
+}
+
+function appendMessage(role, personaId, name, emoji, color, text) {
+  const messages = document.getElementById('messages');
+  const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  const group = document.createElement('div');
+
+  if (role === 'moderator') {
+    group.className = 'msg-group moderator';
+    group.innerHTML = `
+      <div class="msg-sender">사회자 · ${time}</div>
+      <div class="bubble-row">
+        <div class="bubble">${escapeHtml(text)}</div>
+        <div class="msg-avatar" style="background:#1a2e4a;color:white;font-size:11px;font-weight:700">나</div>
+      </div>`;
+  } else {
+    group.className = 'msg-group persona-msg';
+    group.innerHTML = `
+      <div class="msg-sender">${name} · ${time}</div>
+      <div class="bubble-row">
+        <div class="msg-avatar" style="background:${color}">${emoji}</div>
+        <div class="bubble">${escapeHtml(text)}</div>
+      </div>`;
+  }
+  messages.appendChild(group);
+  messages.scrollTop = messages.scrollHeight;
+  return group;
+}
+
+function showTypingFor(persona) {
+  const messages = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'typing-row';
+  row.id = 'typing-' + persona.id;
+  row.innerHTML = `
+    <div class="msg-avatar" style="background:${persona.color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${persona.emoji}</div>
+    <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+    <div style="font-size:11px;color:#9aafbe;margin-left:4px">${persona.name} 입력 중...</div>`;
+  messages.appendChild(row);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function hideTypingFor(personaId) {
+  document.getElementById('typing-' + personaId)?.remove();
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ───────── SEND ─────────
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('inputBox');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = '';
+
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  // 사회자 메시지 추가
+  appendMessage('moderator', null, null, null, null, text);
+  conversationLog.push({ role: 'moderator', name: '사회자', content: text, time: new Date().toISOString() });
+  appendTopicDivider(text);
+
+  // @태그로 특정 페르소나만 응답하는지 확인
+  const tagged = personas.filter(p => text.includes('@' + p.name));
+  const respondents = tagged.length > 0 ? tagged : personas;
+
+  // 각 페르소나 순서대로 응답
+  for (const persona of respondents) {
+    setSpeaking(persona.id);
+    showTypingFor(persona);
+
+    // 이 페르소나의 관점에서 대화 히스토리 구성
+    const messages = buildMessages(persona, text);
+
+    try {
+      await new Promise(r => setTimeout(r, 400)); // 자연스러운 딜레이
+      const response = await fetch(WORKER_URL || 'https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: buildHeaders(API_KEY),
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 200,
+          system: persona.systemPrompt,
+          messages: messages
+        })
+      });
+
+      hideTypingFor(persona.id);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const reply = data.content?.[0]?.text || '...';
+
+      appendMessage('persona', persona.id, persona.name, persona.emoji, persona.color, reply);
+      conversationLog.push({ role: 'persona', name: persona.name, personaId: persona.id, content: reply, time: new Date().toISOString() });
+
+      await new Promise(r => setTimeout(r, 300));
+
+    } catch (err) {
+      hideTypingFor(persona.id);
+      const messages = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.style.cssText = 'font-size:12px;color:#e07a5f;padding:4px 8px;';
+      div.textContent = `⚠️ ${persona.name} 응답 오류: ${err.message}`;
+      messages.appendChild(div);
+    }
+  }
+
+  setSpeaking(null);
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('inputBox').focus();
+}
+
+// 각 페르소나용 메시지 히스토리 구성
+function buildMessages(persona, currentInput) {
+  const msgs = [];
+
+  // 이전 대화 로그 → messages 배열 구성
+  // 이 페르소나가 말한 것 = assistant, 나머지(사회자 + 다른 페르소나) = user 메시지로 묶음
+  let buffer = [];
+
+  for (const log of conversationLog) {
+    if (log.name === persona.name) {
+      // 이 페르소나의 발언
+      if (buffer.length > 0) {
+        msgs.push({ role: 'user', content: buffer.join('\n') });
+        buffer = [];
+      }
+      msgs.push({ role: 'assistant', content: log.content });
+    } else if (log.role === 'moderator') {
+      buffer.push(`[사회자] ${log.content}`);
+    } else {
+      buffer.push(`[${log.name}] ${log.content}`);
+    }
+  }
+
+  // 현재 입력 + 지금까지 이번 턴에서 응답한 다른 페르소나들
+  const currentTurnOthers = conversationLog
+    .slice(conversationLog.length - personas.indexOf(persona))
+    .filter(l => l.role === 'persona' && l.name !== persona.name)
+    .map(l => `[${l.name}] ${l.content}`);
+
+  const userMsg = buffer.join('\n') + (currentTurnOthers.length > 0 ? '\n' + currentTurnOthers.join('\n') : '');
+  if (userMsg.trim()) msgs.push({ role: 'user', content: userMsg.trim() });
+
+  // 히스토리가 너무 길면 자름
+  if (msgs.length > 16) {
+    return msgs.slice(-16);
+  }
+  return msgs.length > 0 ? msgs : [{ role: 'user', content: `[사회자] ${currentInput}` }];
+}
+
+// ───────── EXPORT ─────────
+function exportFGI() {
+  if (conversationLog.length === 0) {
+    alert('내보낼 대화가 없습니다. 먼저 토론을 시작해보세요!');
+    return;
+  }
+
+  const now = new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  let text = '';
+  text += '엠앤에서 (M&Serve) FGI 시뮬레이터 — 토론 기록\n';
+  text += '='.repeat(52) + '\n';
+  text += `참여자  : ${personas.map(p => `${p.name}(${p.age}세·${p.job})`).join(', ')}\n`;
+  text += `내보낸 시각: ${now}\n`;
+  text += '='.repeat(52) + '\n\n';
+
+  let currentTopic = '';
+  for (const log of conversationLog) {
+    if (log.role === 'moderator') {
+      text += '\n' + '─'.repeat(40) + '\n';
+      text += `▶ 사회자\n${log.content}\n`;
+      text += '─'.repeat(40) + '\n\n';
+      currentTopic = log.content;
+    } else {
+      text += `● ${log.name}\n${log.content}\n\n`;
+    }
+  }
+
+  text += '='.repeat(52) + '\n';
+  text += `M&Serve Phase 2 소비자 심층조사 · FGI 시뮬레이션\n`;
+
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `FGI_토론_${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ───────── CLEAR SESSION ─────────
+function clearSession() {
+  if (!confirm('현재 토론 세션을 초기화할까요?')) return;
+  conversationLog = [];
+  const messages = document.getElementById('messages');
+  messages.innerHTML = `
+    <div class="welcome-msg">
+      <span class="emoji">🎙️</span>
+      <h3>세션이 초기화됐습니다</h3>
+      <p>새 주제를 입력해 토론을 다시 시작하세요.</p>
+    </div>`;
+}
+
+// ───────── TEXTAREA AUTO-RESIZE ─────────
+document.getElementById('inputBox').addEventListener('input', function() {
+  this.style.height = '';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+document.getElementById('inputBox').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+</body>
+</html>
