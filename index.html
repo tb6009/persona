@@ -143,18 +143,28 @@
     <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-ant-api03-..." />
     <div class="modal-hint">
       API 키는 <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a>에서 발급받을 수 있어요.<br>
-      키는 브라우저 메모리에만 저장되며 외부로 전송되지 않습니다.
+      키는 이 브라우저에만 저장되며 GitHub나 외부로 전송되지 않습니다.
     </div>
     <div class="key-status" id="keyStatus">✅ 저장된 키가 있어요. 그냥 시작하거나 새 키를 입력하세요.</div>
     <div class="save-key-row">
       <input type="checkbox" id="saveKeyCheck" checked>
-      <label for="saveKeyCheck">이 브라우저에 API 키 저장 (다음 방문 시 자동 입력)</label>
+      <label for="saveKeyCheck">이 브라우저에 설정 저장 (다음 방문 시 자동 입력)</label>
     </div>
+
+    <div style="border-top:1px solid #e8edf2;margin:14px 0 12px;padding-top:14px;">
+      <div class="modal-label">CLOUDFLARE 프록시 URL <span style="font-size:10px;color:#9aafbe;font-weight:400">— CORS 오류 해결 필수</span></div>
+      <input type="text" class="modal-input" id="workerUrlInput" placeholder="https://mnserve-proxy.사용자명.workers.dev" />
+      <div class="modal-hint" style="margin-bottom:0;">
+        GitHub Pages에서 API를 직접 호출하면 CORS 오류가 납니다. 무료 Cloudflare Worker를 설정하면 해결돼요.<br>
+        👉 <a href="https://workers.cloudflare.com" target="_blank">workers.cloudflare.com</a>에서 <code>worker.js</code> 파일을 붙여넣고 URL을 입력하세요.
+      </div>
+    </div>
+
     <div class="modal-error" id="modalError"></div>
     <div class="modal-success" id="modalSuccess"></div>
     <button class="test-btn" id="testBtn" onclick="testConnection()">🔌 연결 테스트</button>
     <button class="modal-btn" onclick="startApp()">시작하기 →</button>
-    <p class="modal-notice">사용 모델: claude-haiku-4-5 · 키는 이 기기 브라우저에만 저장됩니다</p>
+    <p class="modal-notice">사용 모델: claude-haiku-4-5 · 설정은 이 기기 브라우저에만 저장됩니다</p>
   </div>
 </div>
 
@@ -211,16 +221,21 @@
 
 <script>
 let API_KEY = '';
+let WORKER_URL = '';  // Cloudflare Workers 프록시 URL (CORS 해결용)
 let currentPersona = null;
 let conversationHistory = [];
 let isLoading = false;
 
-// ───────── LOAD SAVED KEY ─────────
+// ───────── LOAD SAVED SETTINGS ─────────
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('mnserve_api_key');
-  if (saved) {
-    document.getElementById('apiKeyInput').value = saved;
+  const savedKey = localStorage.getItem('mnserve_api_key');
+  if (savedKey) {
+    document.getElementById('apiKeyInput').value = savedKey;
     document.getElementById('keyStatus').style.display = 'flex';
+  }
+  const savedWorker = localStorage.getItem('mnserve_worker_url');
+  if (savedWorker) {
+    document.getElementById('workerUrlInput').value = savedWorker;
   }
 });
 
@@ -442,6 +457,26 @@ function sanitizeKey(raw) {
   return raw.replace(/[^\x20-\x7E]/g, '').trim();
 }
 
+function getApiUrl() {
+  // Worker URL이 있으면 프록시 사용, 없으면 Anthropic 직접 호출(시도)
+  const w = document.getElementById('workerUrlInput')?.value.trim() || WORKER_URL;
+  return w || 'https://api.anthropic.com/v1/messages';
+}
+
+function buildHeaders(key) {
+  const usingProxy = !!(document.getElementById('workerUrlInput')?.value.trim() || WORKER_URL);
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': key,
+    'anthropic-version': '2023-06-01',
+  };
+  // 프록시 없이 직접 호출할 경우에만 dangerous 헤더 추가 (일부 환경에서만 작동)
+  if (!usingProxy) {
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  return headers;
+}
+
 async function testConnection() {
   const key = sanitizeKey(document.getElementById('apiKeyInput').value);
   if (!key) { showModalError('API 키를 먼저 입력하세요.'); return; }
@@ -452,15 +487,13 @@ async function testConnection() {
   document.getElementById('modalError').style.display = 'none';
   document.getElementById('modalSuccess').style.display = 'none';
 
+  const apiUrl = getApiUrl();
+  const usingProxy = apiUrl !== 'https://api.anthropic.com/v1/messages';
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: buildHeaders(key),
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 10,
@@ -469,7 +502,7 @@ async function testConnection() {
     });
 
     if (res.ok) {
-      showModalSuccess('✅ 연결 성공! 시작하기를 눌러주세요.');
+      showModalSuccess('✅ 연결 성공!' + (usingProxy ? ' (프록시 경유)' : '') + ' 시작하기를 눌러주세요.');
     } else {
       const data = await res.json().catch(() => ({}));
       const code = res.status;
@@ -480,7 +513,11 @@ async function testConnection() {
     }
   } catch (e) {
     if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-      showModalError('❌ 네트워크 오류: 인터넷 연결을 확인하거나, 이 파일을 브라우저로 직접 여셨다면 CORS 차단일 수 있어요. Chrome으로 열어보세요.');
+      if (!usingProxy) {
+        showModalError('❌ CORS 오류: Cloudflare 프록시 URL을 입력해주세요. (위 안내 참고)');
+      } else {
+        showModalError('❌ 프록시 연결 실패: URL을 확인해주세요. (' + apiUrl + ')');
+      }
     } else {
       showModalError('❌ ' + e.message);
     }
@@ -497,13 +534,22 @@ function startApp() {
     return;
   }
   API_KEY = key;
-  // 정제된 키를 입력창에도 반영
   document.getElementById('apiKeyInput').value = key;
-  // 저장 옵션
+
+  // Worker URL 저장
+  const workerInput = document.getElementById('workerUrlInput').value.trim();
+  WORKER_URL = workerInput;
+
   if (document.getElementById('saveKeyCheck').checked) {
     localStorage.setItem('mnserve_api_key', key);
+    if (workerInput) {
+      localStorage.setItem('mnserve_worker_url', workerInput);
+    } else {
+      localStorage.removeItem('mnserve_worker_url');
+    }
   } else {
     localStorage.removeItem('mnserve_api_key');
+    localStorage.removeItem('mnserve_worker_url');
   }
   document.getElementById('modal').classList.add('hidden');
   renderPersonaList();
@@ -511,7 +557,11 @@ function startApp() {
 
 function changeApiKey() {
   API_KEY = '';
+  WORKER_URL = '';
   document.getElementById('apiKeyInput').value = '';
+  // 저장된 Worker URL은 복원해서 보여줌
+  const savedWorker = localStorage.getItem('mnserve_worker_url');
+  if (savedWorker) document.getElementById('workerUrlInput').value = savedWorker;
   document.getElementById('modalError').style.display = 'none';
   document.getElementById('modalSuccess').style.display = 'none';
   document.getElementById('keyStatus').style.display = 'none';
@@ -696,15 +746,18 @@ async function doSend(text) {
 
   showTyping();
 
+  const apiUrl = WORKER_URL || 'https://api.anthropic.com/v1/messages';
+  const reqHeaders = {
+    'Content-Type': 'application/json',
+    'x-api-key': API_KEY,
+    'anthropic-version': '2023-06-01',
+  };
+  if (!WORKER_URL) reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: reqHeaders,
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
@@ -739,7 +792,7 @@ async function doSend(text) {
     if (errMsg.includes('401')) { errHint = '→ API 키가 잘못됐습니다. 왼쪽 하단 "API 키 변경"을 눌러 다시 입력해주세요.'; }
     else if (errMsg.includes('429')) { errHint = '→ 사용량 초과입니다. 잠시 후 다시 시도해보세요.'; }
     else if (errMsg.includes('403')) { errHint = '→ 접근 권한이 없습니다. API 키 권한을 확인해주세요.'; }
-    else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) { errHint = '→ 네트워크 오류입니다. 인터넷 연결을 확인해주세요.'; }
+    else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) { errHint = WORKER_URL ? '→ 프록시 서버에 연결할 수 없습니다. Worker URL을 확인해주세요.' : '→ CORS 오류입니다. 왼쪽 하단 "API 키 변경"을 눌러 Cloudflare 프록시 URL을 입력해주세요.'; }
     else { errHint = '→ 잠시 후 다시 시도해보세요.'; }
     div.innerHTML = `
       <div class="msg-avatar" style="background:${currentPersona.color}">${currentPersona.emoji}</div>
