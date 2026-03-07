@@ -126,6 +126,8 @@
     .no-persona { display: flex; align-items: center; justify-content: center; height: 200px; color: #9aafbe; font-size: 13px; padding: 20px; text-align: center; }
     .reset-btn { margin-left: auto; font-size: 11px; padding: 4px 10px; border: 1px solid #d0dce8; border-radius: 6px; cursor: pointer; background: white; color: #7a8fa5; }
     .reset-btn:hover { background: #f5f7fa; }
+    .export-btn { font-size: 11px; padding: 4px 10px; border: 1px solid #4a9fe0; border-radius: 6px; cursor: pointer; background: white; color: #2e6da4; margin-left: 8px; }
+    .export-btn:hover { background: #eef3f8; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #d0dce8; border-radius: 4px; }
@@ -594,6 +596,20 @@ function renderPersonaList() {
 }
 
 // ───────── PERSONA SELECT ─────────
+const greetMap = {
+  jimin: `안녕하세요~ 저 박지민이에요! ✌️ 뭐가 궁금하세요?`,
+  seoyeon: `안녕하세요, 이서연이에요. 편하게 물어보세요!`,
+  haeun: `안녕하세요! 김하은이에요 ✨ 뭐든 물어봐요~`,
+  minjun: `네, 최민준입니다. 무엇이든 말씀해 주세요.`,
+  soyeon: `안녕하세요~ 정소연이에요. 빨리 시작해요, 시간이 ㅋㅋ`
+};
+
+function saveHistory() {
+  if (currentPersona) {
+    localStorage.setItem('mnserve_history_' + currentPersona.id, JSON.stringify(conversationHistory));
+  }
+}
+
 function selectPersona(id) {
   currentPersona = personas.find(p => p.id === id);
   conversationHistory = [];
@@ -608,22 +624,47 @@ function selectPersona(id) {
   const messages = document.getElementById('messages');
   messages.innerHTML = '';
 
-  // Greeting from persona
-  const greetMap = {
-    jimin: `안녕하세요~ 저 박지민이에요! ✌️ 뭐가 궁금하세요?`,
-    seoyeon: `안녕하세요, 이서연이에요. 편하게 물어보세요!`,
-    haeun: `안녕하세요! 김하은이에요 ✨ 뭐든 물어봐요~`,
-    minjun: `네, 최민준입니다. 무엇이든 말씀해 주세요.`,
-    soyeon: `안녕하세요~ 정소연이에요. 빨리 시작해요, 시간이 ㅋㅋ`
-  };
-  appendMessage('persona', greetMap[id] || `안녕하세요, ${currentPersona.name}입니다!`);
-  conversationHistory.push({ role: 'assistant', content: greetMap[id] });
+  // 저장된 대화 내역 불러오기
+  const saved = localStorage.getItem('mnserve_history_' + id);
+  if (saved) {
+    try {
+      conversationHistory = JSON.parse(saved);
+      // 이전 대화 메시지 화면에 렌더링
+      conversationHistory.forEach(msg => {
+        appendMessage(msg.role === 'user' ? 'user' : 'persona', msg.content);
+      });
+      // 재방문 표시 메시지
+      const notice = document.createElement('div');
+      notice.style.cssText = 'text-align:center;font-size:11px;color:#9aafbe;padding:6px 0;';
+      notice.textContent = `↑ 이전 대화 내역 (${Math.floor(conversationHistory.length / 2)}회 문답) · 이어서 질문하세요`;
+      messages.appendChild(notice);
+      messages.scrollTop = messages.scrollHeight;
+    } catch(e) {
+      conversationHistory = [];
+      showGreeting(id);
+    }
+  } else {
+    showGreeting(id);
+  }
 
   document.getElementById('inputBox').disabled = false;
   document.getElementById('sendBtn').disabled = false;
   document.getElementById('inputBox').placeholder = `${currentPersona.name}에게 질문해보세요...`;
   document.getElementById('quickQuestions').style.display = '';
   document.getElementById('inputBox').focus();
+}
+
+function showGreeting(id) {
+  const msg = greetMap[id] || `안녕하세요, ${currentPersona.name}입니다!`;
+  appendMessage('persona', msg);
+  conversationHistory.push({ role: 'assistant', content: msg });
+  saveHistory();
+}
+
+function resetConversation(id) {
+  if (!confirm(`${currentPersona?.name}과의 대화 기록을 완전히 삭제할까요?`)) return;
+  localStorage.removeItem('mnserve_history_' + id);
+  selectPersona(id);
 }
 
 // ───────── RENDER HELPERS ─────────
@@ -636,7 +677,8 @@ function renderChatHeader() {
       <div class="chat-header-desc">${p.tagline}</div>
       <div class="chat-header-tags">${p.traits.map(t => `<span class="trait-tag">${t}</span>`).join('')}</div>
     </div>
-    <button class="reset-btn" onclick="selectPersona('${p.id}')">대화 초기화</button>`;
+    <button class="reset-btn" onclick="resetConversation('${p.id}')">대화 초기화</button>
+    <button class="export-btn" onclick="exportConversation()">📋 텍스트 내보내기</button>`;
 }
 
 function renderProfile() {
@@ -782,6 +824,7 @@ async function doSend(text) {
     if (conversationHistory.length > 20) {
       conversationHistory = conversationHistory.slice(-20);
     }
+    saveHistory(); // localStorage에 저장
   } catch (err) {
     hideTyping();
     const messages = document.getElementById('messages');
@@ -804,6 +847,53 @@ async function doSend(text) {
   isLoading = false;
   document.getElementById('sendBtn').disabled = false;
   document.getElementById('inputBox').focus();
+}
+
+// ───────── EXPORT CONVERSATION ─────────
+function exportConversation() {
+  if (!currentPersona || conversationHistory.length === 0) {
+    alert('내보낼 대화 내용이 없습니다. 페르소나와 먼저 대화해보세요!');
+    return;
+  }
+
+  const p = currentPersona;
+  const now = new Date().toLocaleString('ko-KR', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  let text = '';
+  text += '엠앤에서 (M&Serve) 페르소나 인터뷰 — 대화 기록\n';
+  text += '='.repeat(52) + '\n';
+  text += `페르소나  : ${p.name} (${p.age}세 · ${p.job})\n`;
+  text += `브랜드    : ${p.brand === 'mlida' ? '밀다 (mlida)' : 'ahgreet'}\n`;
+  text += `태그라인  : ${p.tagline}\n`;
+  text += `소비 성향 : ${p.traits.join(', ')}\n`;
+  text += `내보낸 시각: ${now}\n`;
+  text += '='.repeat(52) + '\n\n';
+
+  text += '【 대화 내용 】\n\n';
+
+  conversationHistory.forEach((msg) => {
+    const role = msg.role === 'user' ? '▶ 연구자' : `● ${p.name}`;
+    text += `${role}\n`;
+    text += `${msg.content}\n\n`;
+  });
+
+  text += '='.repeat(52) + '\n';
+  text += `총 ${Math.floor(conversationHistory.length / 2)}회 문답 · M&Serve Phase 2 소비자 심층조사\n`;
+
+  // 텍스트 파일로 다운로드
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.download = `인터뷰_${p.name}_${dateStr}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ───────── TEXTAREA AUTO-RESIZE ─────────
