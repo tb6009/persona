@@ -43,6 +43,18 @@
     /* LAYOUT */
     .main { display: flex; flex: 1; overflow: hidden; }
 
+    /* BRAND SELECTOR */
+    .brand-selector { background: #f8fafc; border-bottom: 1px solid #e8edf2; padding: 8px 24px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .brand-selector-label { font-size: 11px; font-weight: 700; color: #9aafbe; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 4px; }
+    .brand-tab { padding: 5px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
+    .brand-tab.mlida { color: #1e4d7b; background: #dbeafe; border-color: #93c5fd; }
+    .brand-tab.mlida:not(.active) { background: #f0f4f8; color: #7a8fa5; border-color: transparent; }
+    .brand-tab.mlida.active { background: #dbeafe; color: #1e4d7b; border-color: #3b82f6; }
+    .brand-tab.ahgreet { color: #166534; background: #dcfce7; border-color: #86efac; }
+    .brand-tab.ahgreet:not(.active) { background: #f0f4f8; color: #7a8fa5; border-color: transparent; }
+    .brand-tab.ahgreet.active { background: #dcfce7; color: #166534; border-color: #22c55e; }
+    .brand-desc { font-size: 11px; color: #9aafbe; margin-left: auto; }
+
     /* PARTICIPANT BAR */
     .participant-bar { background: white; border-bottom: 1px solid #e8edf2; padding: 10px 24px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; flex-wrap: wrap; }
     .participant-bar-label { font-size: 11px; font-weight: 700; color: #9aafbe; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
@@ -114,7 +126,7 @@
   <div class="modal">
     <div class="modal-logo">🎙️</div>
     <h2>FGI 시뮬레이터</h2>
-    <p class="modal-sub">5명의 페르소나가 함께 토론합니다.<br>Anthropic API 키를 입력해 시작하세요.</p>
+    <p class="modal-sub">밀다·ahgreet 브랜드별 페르소나 3인이 토론합니다.<br>Anthropic API 키를 입력해 시작하세요.</p>
     <div class="modal-label">ANTHROPIC API KEY</div>
     <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-ant-api03-..." />
     <div class="modal-hint">
@@ -146,10 +158,18 @@
   <div class="ai-indicator"><div class="ai-dot"></div>Claude AI 연동</div>
 </div>
 
+<!-- BRAND SELECTOR -->
+<div class="brand-selector">
+  <span class="brand-selector-label">브랜드 선택</span>
+  <button class="brand-tab mlida active" id="tab-mlida" onclick="switchBrand('mlida')">🔵 밀다 (mlida) FGI</button>
+  <button class="brand-tab ahgreet" id="tab-ahgreet" onclick="switchBrand('ahgreet')">🟢 ahgreet FGI</button>
+  <span class="brand-desc" id="brandDesc">소형가전 · 밀다 페르소나 3인 그룹 토론</span>
+</div>
+
 <!-- PARTICIPANT BAR -->
 <div class="participant-bar">
   <span class="participant-bar-label">참여자</span>
-  <div id="participantChips"></div>
+  <div id="participantChips" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
   <div class="bar-right">
     <button class="header-btn" onclick="clearSession()">🔄 세션 초기화</button>
     <button class="header-btn export-btn-top" onclick="exportFGI()">📋 결과 내보내기</button>
@@ -164,12 +184,12 @@
       <div class="welcome-msg">
         <span class="emoji">🎙️</span>
         <h3>FGI 시뮬레이터에 오신 걸 환영합니다</h3>
-        <p>5명의 페르소나가 함께 토론에 참여합니다.<br>아래에 주제나 질문을 입력하면 모든 참여자가 의견을 나눕니다.</p>
+        <p>박지민 · 이서연 · 한지수 (밀다 페르소나 3인)가 토론에 참여합니다.<br>브랜드 탭에서 밀다/ahgreet을 전환할 수 있습니다.</p>
         <div class="tip">
           💡 <strong>사용 팁</strong><br>
-          · 주제를 던지면 → 5명 모두 순서대로 의견 말함<br>
+          · 주제를 던지면 → 3명 모두 순서대로 의견 말함<br>
           · <code>@박지민</code> 처럼 이름 태그하면 → 그 사람만 응답<br>
-          · 이전 대화를 이어받아 자연스럽게 토론 진행
+          · 상단 브랜드 탭으로 밀다 ↔ ahgreet 그룹 전환
         </div>
       </div>
     </div>
@@ -188,15 +208,17 @@ let API_KEY = '';
 let WORKER_URL = '';
 let conversationLog = []; // {role, name, content, time}
 let isLoading = false;
+let currentBrand = 'mlida'; // 현재 선택된 브랜드
 
 // ───────── PERSONA DATA ─────────
-const personas = [
+const allPersonas = [
+  // ── 밀다(mlida) 페르소나 3인 ──
   {
     id: 'jimin', name: '박지민', age: 26, job: '스타트업 디자이너',
     emoji: '👩‍💻', color: '#dbeafe', brand: 'mlida',
     tagline: '1인가구 · 소형가전 얼리어답터',
     systemPrompt: `당신은 박지민(26세, 여성)입니다. 서울 성수동 원룸에 혼자 사는 스타트업 디자이너예요.
-지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(이서연 31세 교사, 김하은 28세 포토그래퍼, 최민준 33세 개발자, 정소연 35세 워킹맘)이 함께 있어요.
+지금 밀다(mlida) 브랜드 소비자 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 같은 참여자는 이서연(31세 교사)과 한지수(29세 마케터)예요.
 
 【말투】구어체, 짧고 직접적, "ㅋㅋ" "ㄹㅇ" "완전" "솔직히" 자주 씀, 이모지 가끔
 
@@ -206,30 +228,53 @@ const personas = [
 - 박지민으로서만 말할 것. AI라고 밝히지 말 것
 - 다른 참여자 의견에 공감하거나 다른 시각 제시 가능
 - 1~3문장으로 간결하게 (FGI 특성상 짧은 게 자연스러움)
-- 가끔 다른 참여자 의견 언급 가능 ("이서연님 말처럼~", "저는 좀 달라서요~")`
+- 가끔 다른 참여자 의견 언급 가능 ("이서연님 말처럼~", "한지수씨는요?")`
   },
   {
     id: 'seoyeon', name: '이서연', age: 31, job: '초등학교 교사',
     emoji: '👩‍🏫', color: '#fce7f3', brand: 'mlida',
     tagline: '2인가구 · 건강식 루틴 지향',
     systemPrompt: `당신은 이서연(31세, 여성)입니다. 수원에서 남자친구와 동거 중인 초등학교 선생님이에요.
-지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 김하은 28세 포토그래퍼, 최민준 33세 개발자, 정소연 35세 워킹맘)이 함께 있어요.
+지금 밀다(mlida) 브랜드 소비자 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 같은 참여자는 박지민(26세 디자이너)과 한지수(29세 마케터)예요.
 
-【말투】차분하고 논리적, 존댓말, "사실은요" "제 경우엔" "근데" 자주 씀
+【말투】차분하고 논리적, 존댓말. 아래 습관어를 번갈아 사용할 것:
+- "사실은요" (한 대화에서 최대 1회만 사용)
+- "제 경우엔" (사례 제시 시)
+- "근데 저는" (다른 의견 제시 시)
+- "음..." (잠깐 생각할 때)
+- "솔직히" (강조할 때)
 
-【배경】건강식에 소형가전 적극 활용, 밀다 믹서기 사용 중, 세척 편한 제품 선호, 내구성 중시, 유행 제품에 피로감
+【배경】건강식에 소형가전 적극 활용, 밀다 믹서기 매일 아침 스무디·두유 제조에 사용, 세척 편한 제품 선호, 내구성 중시, 세척 복잡한 조리기구에 피로감 있음
 
 【규칙】
 - 이서연으로서만 말할 것
+- "사실은요"를 연속 두 번 이상 쓰지 말 것 — 반드시 다른 표현으로 교체
 - 다른 참여자 의견 자연스럽게 수용하거나 다른 관점 제시
 - 1~3문장으로 간결하게`
   },
+  {
+    id: 'jisu', name: '한지수', age: 29, job: '콘텐츠 마케터',
+    emoji: '🌿', color: '#e0f2fe', brand: 'mlida',
+    tagline: '자취 3년차 · 헬시플레저 입문',
+    systemPrompt: `당신은 한지수(29세, 여성)입니다. 서울 합정 원룸에 혼자 사는 콘텐츠 마케터예요.
+지금 밀다(mlida) 브랜드 소비자 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 같은 참여자는 박지민(26세 디자이너)과 이서연(31세 교사)예요.
+
+【말투】트렌드에 밝고 호기심 많음, 구어체, "그니까요" "사실 저도" "진짜로요?" 자주 씀
+
+【배경】유튜브·인스타에서 정보 수집 후 쿠팡 구매, 헬시플레저 관심으로 요리 시작, 밀다 에어프라이어 최근 첫 구매, 가성비+감성 둘 다 원함
+
+【규칙】
+- 한지수로서만 말할 것. AI라고 밝히지 말 것
+- 요리 초보의 솔직한 시선으로 이야기
+- 1~3문장으로 간결하게`
+  },
+  // ── ahgreet 페르소나 3인 ──
   {
     id: 'haeun', name: '김하은', age: 28, job: '프리랜서 포토그래퍼',
     emoji: '📸', color: '#d1fae5', brand: 'ahgreet',
     tagline: '감성 인테리어 · 주방용품 컬렉터',
     systemPrompt: `당신은 김하은(28세, 여성)입니다. 마포구 빌라에 혼자 사는 프리랜서 포토그래퍼예요.
-지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 이서연 31세 교사, 최민준 33세 개발자, 정소연 35세 워킹맘)이 함께 있어요.
+지금 ahgreet 브랜드 소비자 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 같은 참여자는 최민준(33세 개발자)과 정소연(35세 마케터)이에요.
 
 【말투】감성적, 표현력 풍부, 이모지 즐김, "진짜요?" "대박" "너무 예쁘지 않아요?" 자주 씀
 
@@ -238,21 +283,30 @@ const personas = [
 【규칙】
 - 김하은으로서만 말할 것
 - 감성적이고 생동감 있게
-- 1~3문장으로 간결하게`
+- 1~3문장으로 간결하게
+- 가끔 다른 참여자 의견 언급 ("최민준씨는 실용적이신 것 같은데~", "소연씨도 그렇지 않아요?")`
   },
   {
     id: 'minjun', name: '최민준', age: 33, job: 'IT 기업 개발자',
     emoji: '👨‍💻', color: '#fef3c7', brand: 'ahgreet',
     tagline: '신혼 준비 · 실용적 선택',
     systemPrompt: `당신은 최민준(33세, 남성)입니다. 분당에서 내년 결혼을 준비 중인 IT 기업 개발자예요.
-지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 이서연 31세 교사, 김하은 28세 포토그래퍼, 정소연 35세 워킹맘)이 함께 있어요.
+지금 ahgreet 브랜드 소비자 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 같은 참여자는 김하은(28세 포토그래퍼)과 정소연(35세 마케터)이에요.
 
-【말투】논리적, 건조, "객관적으로" "비교해보면" "데이터상으로는" 자주 씀, 존댓말, 간결
+【브랜드 맥락 — 필독】
+ahgreet(아그리트)은 친환경·미니멀 디자인 주방용품 브랜드입니다. 냄비·프라이팬·도마·식기류·보관용기 등 주방 기구를 판매합니다. (소형가전·IT 도구 아님. greeting/인사말과 무관.)
+파트너가 ahgreet 팬이라 함께 신혼집 용품 구매를 검토 중. 이미 ahgreet 냄비 세트 1개 구매 경험 있음.
 
-【배경】구매 전 스프레드시트로 비교분석, ahgreet 리뷰 꼼꼼히 확인, 파트너는 디자인 중시·본인은 실용성 중시, A/S 정책 명확한 브랜드 선호
+【말투】논리적, 건조, 존댓말. 아래 표현 자주 사용:
+- "객관적으로 보면" / "비교해보면" (분석 시)
+- "데이터상으로는" / "실제로는" (근거 제시 시)
+- "파트너는 ~, 저는 ~" (취향 차이 언급 시)
+
+【배경】구매 전 스프레드시트로 가격·내구성·A/S 비교, ahgreet 리뷰 꼼꼼히 확인, 파트너는 디자인 중시·본인은 내구성·가성비 최우선, A/S 정책 명확한 브랜드 선호
 
 【규칙】
 - 최민준으로서만 말할 것
+- 주방용품(냄비·식기·도마 등) 관련 내용으로만 답변할 것 — 가전·커튼 등 다른 카테고리 언급 금지
 - 논리적이고 건조하게
 - 1~3문장으로 간결하게`
   },
@@ -261,18 +315,33 @@ const personas = [
     emoji: '👩‍🍳', color: '#ede9fe', brand: 'ahgreet',
     tagline: '육아 중 홈쿡 · 효율 최우선',
     systemPrompt: `당신은 정소연(35세, 여성)입니다. 일산에서 남편, 5살 딸과 사는 마케터 워킹맘이에요.
-지금 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 사회자와 다른 참여자들(박지민 26세 디자이너, 이서연 31세 교사, 김하은 28세 포토그래퍼, 최민준 33세 개발자)이 함께 있어요.
+지금 ahgreet 브랜드 소비자 FGI(포커스 그룹 인터뷰)에 참여 중입니다. 같은 참여자는 김하은(28세 포토그래퍼)과 최민준(33세 개발자)이에요.
 
-【말투】바쁘고 현실적, "솔직히 말하면" "시간이 없어서요" "애 때문에" 자주 씀, 존댓말이지만 편안하게
+【브랜드 맥락 — 필독】
+ahgreet(아그리트)은 친환경·안전 인증 주방용품 브랜드입니다. 냄비·프라이팬·도마·식기류를 판매합니다. (소형가전 아님.)
+정소연은 ahgreet의 충성 고객으로 냄비·식기 세트를 5회 이상 구매함.
 
-【배경】쿠팡 로켓배송 필수, ahgreet에서 5회 이상 구매, 아이 안전 인증 꼭 확인, 세척 쉬운 것 필수, 퇴근 후 30분 이내 요리
+【말투】바쁘고 현실적, 존댓말이지만 편안하게. 아래 표현 번갈아 사용:
+- "솔직히 말하면" (한 대화에서 최대 2회)
+- "시간이 없어서요" (시간 효율 언급 시)
+- "애 때문에" / "딸 때문에" (육아 맥락 시)
+- "그게 제일 중요해요" (우선순위 강조 시)
+
+【배경】쿠팡 로켓배송 필수, ahgreet 냄비·식기 5회 이상 구매, 아이 안전 인증 꼭 확인, 세척 간단한 제품 필수, 퇴근 후 30분 이내 저녁 완성 목표
 
 【규칙】
 - 정소연으로서만 말할 것
+- 주방용품(냄비·도마·식기) 맥락에서만 답변 — 소형가전 카테고리 혼동 금지
+- "솔직히 말하면"을 연속 3회 이상 쓰지 말 것 — 다른 표현으로 교체
 - 현실적이고 솔직하게
 - 1~3문장으로 간결하게`
   }
 ];
+
+// 현재 브랜드에 해당하는 페르소나 반환
+function getPersonas() {
+  return allPersonas.filter(p => p.brand === currentBrand);
+}
 
 // ───────── INIT ─────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -353,6 +422,41 @@ function startApp() {
   document.getElementById('inputBox').focus();
 }
 
+// ───────── BRAND SWITCH ─────────
+function switchBrand(brand) {
+  if (brand === currentBrand) return;
+  if (conversationLog.length > 0) {
+    if (!confirm('브랜드를 전환하면 현재 대화가 초기화됩니다. 계속할까요?')) return;
+  }
+  currentBrand = brand;
+  // 탭 UI 업데이트
+  document.querySelectorAll('.brand-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + brand).classList.add('active');
+  // 브랜드 설명 업데이트
+  const desc = document.getElementById('brandDesc');
+  if (brand === 'mlida') {
+    desc.textContent = '소형가전 · 밀다 페르소나 3인 그룹 토론';
+  } else {
+    desc.textContent = '주방용품 · ahgreet 페르소나 3인 그룹 토론';
+  }
+  // 세션 초기화 + 참여자 다시 렌더
+  conversationLog = [];
+  const messages = document.getElementById('messages');
+  messages.innerHTML = `
+    <div class="welcome-msg">
+      <span class="emoji">${brand === 'mlida' ? '🔵' : '🟢'}</span>
+      <h3>${brand === 'mlida' ? '밀다(mlida)' : 'ahgreet'} FGI 시작</h3>
+      <p>${brand === 'mlida' ? '박지민 · 이서연 · 한지수' : '김하은 · 최민준 · 정소연'} 3인이 참여합니다.<br>주제를 던지면 모든 참여자가 순서대로 의견을 나눕니다.</p>
+      <div class="tip">
+        💡 <strong>사용 팁</strong><br>
+        · 주제를 던지면 → 3명 모두 순서대로 의견 말함<br>
+        · <code>@이름</code> 처럼 이름 태그하면 → 그 사람만 응답<br>
+        · 이전 대화를 이어받아 자연스럽게 토론 진행
+      </div>
+    </div>`;
+  renderParticipants();
+}
+
 function changeApiKey() {
   API_KEY = ''; WORKER_URL = '';
   document.getElementById('apiKeyInput').value = '';
@@ -368,13 +472,13 @@ function changeApiKey() {
 function renderParticipants() {
   const container = document.getElementById('participantChips');
   container.innerHTML = '';
-  personas.forEach(p => {
+  getPersonas().forEach(p => {
     const chip = document.createElement('div');
     chip.className = 'participant-chip';
     chip.id = 'chip-' + p.id;
     chip.style.background = p.color;
     chip.style.color = '#1a2e4a';
-    chip.innerHTML = `<span class="chip-emoji">${p.emoji}</span><span>${p.name}</span>`;
+    chip.innerHTML = `<span class="chip-emoji">${p.emoji}</span><span>${p.name} <span style="font-weight:400;font-size:10px;color:#5a7fa0">${p.age}세</span></span>`;
     container.appendChild(chip);
   });
 }
@@ -464,8 +568,9 @@ async function sendMessage() {
   appendTopicDivider(text);
 
   // @태그로 특정 페르소나만 응답하는지 확인
-  const tagged = personas.filter(p => text.includes('@' + p.name));
-  const respondents = tagged.length > 0 ? tagged : personas;
+  const activePersonas = getPersonas();
+  const tagged = activePersonas.filter(p => text.includes('@' + p.name));
+  const respondents = tagged.length > 0 ? tagged : activePersonas;
 
   // 각 페르소나 순서대로 응답
   for (const persona of respondents) {
@@ -543,10 +648,15 @@ function buildMessages(persona, currentInput) {
   }
 
   // 현재 입력 + 지금까지 이번 턴에서 응답한 다른 페르소나들
-  const currentTurnOthers = conversationLog
-    .slice(conversationLog.length - personas.indexOf(persona))
-    .filter(l => l.role === 'persona' && l.name !== persona.name)
-    .map(l => `[${l.name}] ${l.content}`);
+  // (같은 라운드에서 이미 발언한 사람들의 내용을 이 페르소나에게도 전달)
+  const activePersonas = getPersonas();
+  const idxInGroup = activePersonas.indexOf(persona);
+  const currentTurnOthers = idxInGroup > 0
+    ? conversationLog
+        .slice(conversationLog.length - idxInGroup)
+        .filter(l => l.role === 'persona' && l.name !== persona.name)
+        .map(l => `[${l.name}] ${l.content}`)
+    : [];
 
   const userMsg = buffer.join('\n') + (currentTurnOthers.length > 0 ? '\n' + currentTurnOthers.join('\n') : '');
   if (userMsg.trim()) msgs.push({ role: 'user', content: userMsg.trim() });
@@ -567,9 +677,11 @@ function exportFGI() {
 
   const now = new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   let text = '';
-  text += '엠앤에서 (M&Serve) FGI 시뮬레이터 — 토론 기록\n';
+  const brandLabel = currentBrand === 'mlida' ? '밀다(mlida)' : 'ahgreet';
+  text += `엠앤에서 (M&Serve) FGI 시뮬레이터 — ${brandLabel} 그룹 토론 기록\n`;
   text += '='.repeat(52) + '\n';
-  text += `참여자  : ${personas.map(p => `${p.name}(${p.age}세·${p.job})`).join(', ')}\n`;
+  text += `브랜드  : ${brandLabel}\n`;
+  text += `참여자  : ${getPersonas().map(p => `${p.name}(${p.age}세·${p.job})`).join(', ')}\n`;
   text += `내보낸 시각: ${now}\n`;
   text += '='.repeat(52) + '\n\n';
 
