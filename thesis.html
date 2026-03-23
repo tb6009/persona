@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 페르소나 기반 소비자 심층조사 신뢰도 연구 — 목차</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR','Apple SD Gothic Neo',sans-serif; background: #f0ede4; min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar { background: #1a2e1a; color: white; padding: 10px 24px; display: flex; align-items: center; gap: 12px; }
+    .topbar a { font-size: 11px; color: #8dc46a; text-decoration: none; padding: 3px 10px; border: 1px solid #3a5a2a; border-radius: 4px; }
+    .topbar-logo { font-size: 12px; font-weight: 700; color: #8dc46a; letter-spacing: .1em; text-transform: uppercase; }
+    .topbar-title { font-size: 13px; color: #c0d8c0; }
+    .topbar-badge { margin-left: auto; font-size: 10px; background: #2d4a1e; color: #8dc46a; padding: 2px 10px; border-radius: 10px; }
+
+    .cover { background: linear-gradient(160deg, #1a2e1a 0%, #2e4a1e 50%, #1a3a2a 100%); color: white; padding: 64px 48px 56px; text-align: center; }
+    .cover-badge { display: inline-block; background: rgba(141,196,106,.15); border: 1px solid rgba(141,196,106,.3); font-size: 11px; padding: 4px 14px; border-radius: 20px; margin-bottom: 24px; color: #8dc46a; letter-spacing: .08em; }
+    .cover-title-ko { font-size: 26px; font-weight: 800; line-height: 1.5; margin-bottom: 10px; letter-spacing: -.02em; }
+    .cover-title-en { font-size: 15px; color: #8aaa8a; margin-bottom: 32px; font-style: italic; line-height: 1.6; }
+    .cover-meta { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+    .cover-meta-item { text-align: center; }
+    .meta-label { font-size: 10px; color: #6a8a6a; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+    .meta-value { font-size: 13px; color: #c0d8c0; font-weight: 600; }
+
+    .content { flex: 1; max-width: 900px; margin: 0 auto; width: 100%; padding: 40px 32px 60px; }
+
+    .abstract-box { background: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 32px; box-shadow: 0 2px 10px rgba(0,0,0,.06); border-left: 5px solid #2e6a2e; }
+    .abstract-title { font-size: 13px; font-weight: 700; color: #2e4a2e; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 14px; }
+    .abstract-text { font-size: 13px; color: #3a4a3a; line-height: 2.0; text-align: justify; }
+    .keyword-row { margin-top: 14px; font-size: 12px; color: #6a8a6a; }
+    .kw { display: inline-block; background: #f0f8f0; border: 1px solid #c8dcc8; border-radius: 4px; padding: 2px 8px; margin: 2px 3px; color: #2e4a2e; }
+
+    .toc-section { margin-bottom: 28px; }
+    .toc-section-label { font-size: 11px; font-weight: 700; color: #6a8a6a; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e8e0d0; }
+    .toc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+    .toc-card { background: white; border-radius: 10px; padding: 18px 20px; text-decoration: none; color: inherit; display: flex; align-items: flex-start; gap: 14px; border: 1px solid #e8e0d0; transition: all .15s; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+    .toc-card:hover { border-color: #4a8a4a; box-shadow: 0 4px 16px rgba(74,138,74,.12); transform: translateY(-1px); }
+    .toc-card.appendix { border-color: #d8c8a8; background: #fdfaf4; }
+    .toc-card.appendix:hover { border-color: #a8884a; }
+    .tc-num { width: 40px; height: 40px; border-radius: 10px; background: #1a2e1a; color: #8dc46a; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: sans-serif; }
+    .tc-num.app { background: #4a3a1a; color: #d4a84a; }
+    .tc-num.ref { background: #1a2a4a; color: #6aadda; }
+    .tc-content {}
+    .tc-chapter { font-size: 10px; color: #8a9a8a; letter-spacing: .05em; margin-bottom: 3px; font-family: sans-serif; }
+    .tc-title { font-size: 14px; font-weight: 700; color: #1a2e1a; margin-bottom: 4px; }
+    .tc-desc { font-size: 11px; color: #7a9a7a; line-height: 1.6; }
+    .tc-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .tc-tag { font-size: 10px; background: #f0f8f0; color: #2e4a2e; padding: 1px 6px; border-radius: 3px; }
+    .tc-tag.ssr { background: #fef3c7; color: #92400e; }
+    .tc-tag.data { background: #ede9fe; color: #5b21b6; }
+
+    footer { background: #1a2e1a; color: #4a6a4a; text-align: center; padding: 14px; font-size: 11px; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html">← 홈</a>
+  <span class="topbar-logo">M&amp;Serve</span>
+  <span class="topbar-title">AI 페르소나 신뢰도 연구 — 논문</span>
+  <span class="topbar-badge">Research Paper v1.0</span>
+</div>
+
+<div class="cover">
+  <div class="cover-badge">소비자 리서치 · 질적 연구 · AI 시뮬레이션 방법론</div>
+  <div class="cover-title-ko">AI 생성 소비자 페르소나의<br>시뮬레이션 안정성 검증에 관한 연구<br><span style="font-size:20px; color:#8dc46a">— 밀다(mlida) 브랜드 심층 인터뷰를 중심으로 —</span></div>
+  <div class="cover-title-en">A Study on Simulation Stability Reliability of AI-Generated Consumer Personas:<br>Focused on In-depth Interviews with mlida Brand Consumers</div>
+  <div class="cover-meta">
+    <div class="cover-meta-item"><div class="meta-label">연구 기관</div><div class="meta-value">M&amp;Serve 디자인 리서치팀</div></div>
+    <div class="cover-meta-item"><div class="meta-label">프로토콜 버전</div><div class="meta-value">Research-Based v1.0</div></div>
+    <div class="cover-meta-item"><div class="meta-label">인터뷰 대상</div><div class="meta-value">AI 페르소나 3인</div></div>
+    <div class="cover-meta-item"><div class="meta-label">작성일</div><div class="meta-value">2026년 3월</div></div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="abstract-box">
+    <div class="abstract-title">국문 초록 (Abstract)</div>
+    <div class="abstract-text">
+      본 연구는 AI 생성 소비자 페르소나를 활용한 심층 인터뷰 시뮬레이션의 신뢰도를 체계적으로 검증하는 것을 목적으로 한다. 구체적으로, OCEAN 5요인 성격 모델과 래더링(Laddering) 기법에 기반하여 설계된 3인의 AI 페르소나(박지민, 이서연, 한지수)에 대해 Research-Based Interview Protocol v1.0 (38문항)을 적용하고, 동일 자극에 대한 50회 반복 시뮬레이션을 통해 시뮬레이션 안정성 비율(SSR: Simulation Stability Rate)을 산출하였다. SSR은 핵심 주제 일관율(CTCR), 핵심 키워드 유지율(KRR), 의미 유사도 점수(SSS)의 가중 평균으로 정의되며, 분석 결과 전체 평균 SSR은 0.884로 '높음(High)' 수준으로 나타났다. 이는 AI 페르소나 기반 인터뷰 시뮬레이션이 마케팅 리서치 맥락에서 충분한 활용 가능성을 지님을 시사한다. 다만 실제 소비자 인터뷰(n≥10)와의 교차 검증을 통해 생태학적 타당도를 확보할 것을 권고한다.
+    </div>
+    <div class="keyword-row">
+      <strong>핵심어: </strong>
+      <span class="kw">AI 페르소나</span>
+      <span class="kw">시뮬레이션 안정성 비율(SSR)</span>
+      <span class="kw">OCEAN 성격 모델</span>
+      <span class="kw">래더링 기법</span>
+      <span class="kw">소비자 심층 인터뷰</span>
+      <span class="kw">밀다(mlida)</span>
+    </div>
+  </div>
+
+  <!-- MAIN TOC -->
+  <div class="toc-section">
+    <div class="toc-section-label">본문</div>
+    <div class="toc-grid">
+      <a class="toc-card" href="thesis-ch1.html">
+        <div class="tc-num">1</div>
+        <div class="tc-content">
+          <div class="tc-chapter">제1장</div>
+          <div class="tc-title">서론</div>
+          <div class="tc-desc">연구의 배경, 목적, 연구 질문, 범위와 한계를 제시한다.</div>
+          <div class="tc-tags"><span class="tc-tag">연구 배경</span><span class="tc-tag">연구 목적</span><span class="tc-tag">연구 질문</span></div>
+        </div>
+      </a>
+      <a class="toc-card" href="thesis-ch2.html">
+        <div class="tc-num">2</div>
+        <div class="tc-content">
+          <div class="tc-chapter">제2장</div>
+          <div class="tc-title">이론적 배경</div>
+          <div class="tc-desc">AI 페르소나 연구 동향, OCEAN 모델, 래더링 기법, 소비자 행동 이론을 검토한다.</div>
+          <div class="tc-tags"><span class="tc-tag">OCEAN</span><span class="tc-tag">래더링</span><span class="tc-tag">선행 연구</span></div>
+        </div>
+      </a>
+      <a class="toc-card" href="thesis-ch3.html">
+        <div class="tc-num">3</div>
+        <div class="tc-content">
+          <div class="tc-chapter">제3장</div>
+          <div class="tc-title">연구 방법</div>
+          <div class="tc-desc">페르소나 설계 과정, 인터뷰 프로토콜, SSR 산출 방법론, 50회 반복 실험 설계를 기술한다.</div>
+          <div class="tc-tags"><span class="tc-tag ssr">SSR 공식</span><span class="tc-tag">50회 반복</span><span class="tc-tag">CTCR·KRR·SSS</span></div>
+        </div>
+      </a>
+      <a class="toc-card" href="thesis-ch4.html">
+        <div class="tc-num">4</div>
+        <div class="tc-content">
+          <div class="tc-chapter">제4장</div>
+          <div class="tc-title">연구 결과</div>
+          <div class="tc-desc">3인 페르소나의 SSR 50회 검증 결과, 인터뷰 패턴 분석, 래더링 결과를 제시한다.</div>
+          <div class="tc-tags"><span class="tc-tag ssr">SSR 결과 표</span><span class="tc-tag data">ICC 0.891</span><span class="tc-tag">래더링 체인</span></div>
+        </div>
+      </a>
+      <a class="toc-card" href="thesis-ch5.html">
+        <div class="tc-num">5</div>
+        <div class="tc-content">
+          <div class="tc-chapter">제5장</div>
+          <div class="tc-title">논의</div>
+          <div class="tc-desc">주요 발견의 이론적·실무적 함의와 연구 한계를 논의한다.</div>
+          <div class="tc-tags"><span class="tc-tag">이론적 함의</span><span class="tc-tag">실무 적용</span><span class="tc-tag">한계</span></div>
+        </div>
+      </a>
+      <a class="toc-card" href="thesis-ch6.html">
+        <div class="tc-num">6</div>
+        <div class="tc-content">
+          <div class="tc-chapter">제6장</div>
+          <div class="tc-title">결론</div>
+          <div class="tc-desc">연구 요약, 결론, 향후 연구 방향을 제시한다.</div>
+          <div class="tc-tags"><span class="tc-tag">연구 요약</span><span class="tc-tag">향후 연구</span></div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-section-label">참고문헌 및 부록</div>
+    <div class="toc-grid">
+      <a class="toc-card" href="thesis-ref.html">
+        <div class="tc-num ref">R</div>
+        <div class="tc-content">
+          <div class="tc-chapter">참고문헌</div>
+          <div class="tc-title">References</div>
+          <div class="tc-desc">APA 7판 형식 인용 문헌 목록. 래더링, OCEAN, AI 연구, 소비자 행동 이론 등 31건.</div>
+          <div class="tc-tags"><span class="tc-tag">APA 7th</span><span class="tc-tag">31건</span></div>
+        </div>
+      </a>
+      <a class="toc-card appendix" href="thesis-appendix.html">
+        <div class="tc-num app">A</div>
+        <div class="tc-content">
+          <div class="tc-chapter">부록</div>
+          <div class="tc-title">원본 인터뷰 데이터 (3인 전문)</div>
+          <div class="tc-desc">박지민·이서연·한지수 AI 페르소나 심층 인터뷰 38문항 전체 응답 원문.</div>
+          <div class="tc-tags"><span class="tc-tag data">원본 데이터</span><span class="tc-tag">38문항×3인</span></div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<footer>M&amp;Serve · AI 페르소나 신뢰도 연구 · Research-Based Interview Protocol v1.0 · 2026.03</footer>
+</body>
+</html>

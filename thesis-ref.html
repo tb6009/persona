@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>참고문헌 — AI 페르소나 신뢰도 연구</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR','Apple SD Gothic Neo',sans-serif; background: #f0ede4; display: flex; flex-direction: column; min-height: 100vh; }
+
+    .topbar { background: #1a2e1a; color: white; padding: 10px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .topbar a { font-size: 11px; color: #8dc46a; text-decoration: none; padding: 3px 10px; border: 1px solid #3a5a2a; border-radius: 4px; }
+    .topbar a:hover { background: #2a4a1a; }
+    .topbar-logo { font-size: 12px; font-weight: 700; color: #8dc46a; letter-spacing: .1em; }
+    .topbar-title { font-size: 13px; color: #c0d8c0; }
+    .topbar-badge { margin-left: auto; font-size: 10px; background: #2d4a1e; color: #8dc46a; padding: 2px 10px; border-radius: 10px; }
+
+    .layout { display: flex; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; padding: 32px 20px 60px; gap: 28px; }
+
+    /* SIDEBAR */
+    .sidebar { width: 210px; flex-shrink: 0; }
+    .sidebar-box { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.07); position: sticky; top: 20px; }
+    .sidebar-title { font-size: 10px; font-weight: 700; color: #6a8a6a; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e8e0d0; }
+    .nav-item { display: block; padding: 7px 10px; border-radius: 6px; text-decoration: none; font-size: 12px; color: #5a6a5a; margin-bottom: 3px; }
+    .nav-item:hover { background: #f0f8f0; color: #1a2e1a; }
+    .nav-item.active { background: #1a2a4a; color: #6aadda; font-weight: 700; }
+    .nav-item small { display: block; font-size: 10px; opacity: .7; margin-top: 1px; }
+    .nav-divider { height: 1px; background: #e8e0d0; margin: 8px 0; }
+
+    /* MAIN */
+    .main { flex: 1; max-width: 820px; }
+    .ref-header { background: linear-gradient(135deg, #1a2a4a 0%, #1a3a5a 100%); color: white; border-radius: 14px; padding: 32px 36px; margin-bottom: 32px; }
+    .ref-badge { display: inline-block; background: rgba(106,173,218,.2); border: 1px solid rgba(106,173,218,.3); color: #6aadda; font-size: 11px; padding: 3px 12px; border-radius: 12px; margin-bottom: 14px; letter-spacing: .05em; }
+    .ref-label { font-size: 13px; color: #6aadda; font-weight: 700; margin-bottom: 6px; letter-spacing: .05em; }
+    .ref-title-main { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+    .ref-desc { font-size: 13px; color: #9ac0d8; line-height: 1.8; }
+
+    /* REFERENCE SECTION */
+    .ref-section { background: white; border-radius: 12px; padding: 24px 32px; margin-bottom: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.06); }
+    .ref-sec-label { font-size: 11px; font-weight: 700; color: #1a2a4a; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e8f0f8; display: flex; align-items: center; gap: 8px; }
+    .ref-sec-count { background: #1a2a4a; color: #6aadda; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+
+    /* INDIVIDUAL REFERENCE */
+    .ref-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; display: flex; gap: 12px; }
+    .ref-item:last-child { border-bottom: none; }
+    .ref-num { width: 28px; height: 28px; background: #f0f4f8; border-radius: 6px; font-size: 11px; font-weight: 700; color: #1a2a4a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .ref-content { flex: 1; }
+    .ref-text { font-size: 12.5px; color: #2a3a4a; line-height: 1.9; font-family: 'Georgia', serif; }
+    .ref-text em { font-style: italic; }
+    .ref-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .ref-tag { font-size: 10px; padding: 1px 7px; border-radius: 3px; }
+    .ref-tag.method { background: #e8f0ff; color: #1a2a8a; }
+    .ref-tag.ocean { background: #e8f8e8; color: #1a4a1a; }
+    .ref-tag.ladder { background: #fff0e8; color: #6a2a00; }
+    .ref-tag.ai { background: #f0e8ff; color: #4a1a8a; }
+    .ref-tag.consumer { background: #fff8e8; color: #6a4a00; }
+    .ref-tag.kr { background: #e8fff0; color: #006a30; }
+
+    /* APA NOTE */
+    .apa-note { background: #f8f4e8; border: 1px solid #d8c888; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; font-size: 12px; color: #4a3a10; line-height: 1.8; }
+    .apa-note strong { color: #3a2a00; }
+
+    /* NAV BUTTONS */
+    .nav-buttons { display: flex; justify-content: space-between; margin-top: 32px; }
+    .nav-btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1px solid #c8d8c8; background: white; color: #3a5a3a; transition: all .15s; }
+    .nav-btn:hover { background: #1a2e1a; color: #8dc46a; border-color: #1a2e1a; }
+    .nav-btn.primary { background: #1a2a4a; color: #6aadda; border-color: #1a2a4a; }
+    .nav-btn.primary:hover { background: #1a3a6a; }
+
+    footer { background: #1a2e1a; color: #4a6a4a; text-align: center; padding: 14px; font-size: 11px; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html">← 홈</a>
+  <a href="thesis.html">목차</a>
+  <span class="topbar-logo">M&amp;Serve</span>
+  <span class="topbar-title">AI 페르소나 신뢰도 연구 — 참고문헌</span>
+  <span class="topbar-badge">References · APA 7th</span>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-box">
+      <div class="sidebar-title">논문 목차</div>
+      <a class="nav-item" href="thesis-ch1.html">제1장 <small>서론</small></a>
+      <a class="nav-item" href="thesis-ch2.html">제2장 <small>이론적 배경</small></a>
+      <a class="nav-item" href="thesis-ch3.html">제3장 <small>연구 방법</small></a>
+      <a class="nav-item" href="thesis-ch4.html">제4장 <small>연구 결과</small></a>
+      <a class="nav-item" href="thesis-ch5.html">제5장 <small>논의</small></a>
+      <a class="nav-item" href="thesis-ch6.html">제6장 <small>결론</small></a>
+      <div class="nav-divider"></div>
+      <a class="nav-item active" href="thesis-ref.html">참고문헌 <small>References</small></a>
+      <a class="nav-item" href="thesis-appendix.html">부록 <small>원본 인터뷰 데이터</small></a>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="ref-header">
+      <div class="ref-badge">APA 7th Edition · 참고문헌</div>
+      <div class="ref-label">REFERENCES</div>
+      <div class="ref-title-main">참고문헌</div>
+      <div class="ref-desc">본 논문에 인용된 모든 문헌을 APA 제7판 형식에 따라 수록하였다. 총 31건.</div>
+    </div>
+
+    <div class="apa-note">
+      <strong>인용 형식 안내:</strong> 본 논문의 참고문헌은 APA(American Psychological Association) 제7판 형식을 따른다. 영문 문헌은 원제를 그대로 사용하며, 국문 문헌은 원제 표기 후 영문 번역을 병기한다. 저자가 3인 이상인 경우 첫 번째 저자 외 나머지는 "et al." 또는 "외"로 처리하였다.
+    </div>
+
+    <!-- AI & LLM REFERENCES -->
+    <div class="ref-section">
+      <div class="ref-sec-label">AI · LLM · 시뮬레이션 연구 <span class="ref-sec-count">8건</span></div>
+
+      <div class="ref-item">
+        <div class="ref-num">1</div>
+        <div class="ref-content">
+          <div class="ref-text">Argyle, L. P., Busby, E. C., Fulda, N., Gubler, J. R., Rytting, C., &amp; Wingate, D. (2023). Out of one, many: Using language models to simulate human samples. <em>Political Analysis, 31</em>(3), 337–351. https://doi.org/10.1017/pan.2023.2</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">시뮬레이션</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">2</div>
+        <div class="ref-content">
+          <div class="ref-text">Brown, T. B., Mann, B., Ryder, N., Subbiah, M., Kaplan, J., Dhariwal, P., ... &amp; Amodei, D. (2020). Language models are few-shot learners. <em>Advances in Neural Information Processing Systems, 33</em>, 1877–1901.</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">LLM</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">3</div>
+        <div class="ref-content">
+          <div class="ref-text">Hamalainen, P., Tavast, M., &amp; Kunnari, A. (2023). Evaluating large language models in generating synthetic HCI research data: A case study. In <em>Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems</em> (pp. 1–19). ACM. https://doi.org/10.1145/3544548.3580688</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">HCI</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">4</div>
+        <div class="ref-content">
+          <div class="ref-text">Ouyang, L., Wu, J., Jiang, X., Almeida, D., Wainwright, C. L., Mishkin, P., ... &amp; Lowe, R. (2022). Training language models to follow instructions with human feedback. <em>Advances in Neural Information Processing Systems, 35</em>, 27730–27744.</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">RLHF</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">5</div>
+        <div class="ref-content">
+          <div class="ref-text">Park, J. S., O'Brien, J. C., Cai, C. J., Morris, M. R., Liang, P., &amp; Bernstein, M. S. (2023). Generative agents: Interactive simulacra of human behavior. In <em>Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology</em> (pp. 1–22). ACM. https://doi.org/10.1145/3586183.3606763</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">에이전트</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">6</div>
+        <div class="ref-content">
+          <div class="ref-text">Salewski, L., Alaniz, S., Rio-Torto, I., Schulz, E., &amp; Akata, Z. (2024). In-context impersonation reveals large language models' strengths and biases. <em>Advances in Neural Information Processing Systems, 36</em>.</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">페르소나</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">7</div>
+        <div class="ref-content">
+          <div class="ref-text">Salminen, J., Jung, S.-G., An, J., Kwak, H., &amp; Jansen, B. J. (2022). Designing and evaluating user personas: A systematic review of the literature. <em>ACM Computing Surveys, 55</em>(7), 1–35. https://doi.org/10.1145/3579462</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">페르소나</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">8</div>
+        <div class="ref-content">
+          <div class="ref-text">Wei, J., Wang, X., Schuurmans, D., Bosma, M., Xia, F., Chi, E., ... &amp; Zhou, D. (2022). Chain-of-thought prompting elicits reasoning in large language models. <em>Advances in Neural Information Processing Systems, 35</em>, 24824–24837.</div>
+          <div class="ref-tags"><span class="ref-tag ai">AI</span><span class="ref-tag method">프롬프팅</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OCEAN / PERSONALITY PSYCHOLOGY -->
+    <div class="ref-section">
+      <div class="ref-sec-label">OCEAN · 성격심리학 <span class="ref-sec-count">6건</span></div>
+
+      <div class="ref-item">
+        <div class="ref-num">9</div>
+        <div class="ref-content">
+          <div class="ref-text">Costa, P. T., Jr., &amp; McCrae, R. R. (1992). <em>Revised NEO Personality Inventory (NEO PI-R) and NEO Five-Factor Inventory (NEO-FFI) professional manual</em>. Psychological Assessment Resources.</div>
+          <div class="ref-tags"><span class="ref-tag ocean">OCEAN</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">10</div>
+        <div class="ref-content">
+          <div class="ref-text">Digman, J. M. (1990). Personality structure: Emergence of the five-factor model. <em>Annual Review of Psychology, 41</em>(1), 417–440. https://doi.org/10.1146/annurev.ps.41.020190.002221</div>
+          <div class="ref-tags"><span class="ref-tag ocean">OCEAN</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">11</div>
+        <div class="ref-content">
+          <div class="ref-text">Goldberg, L. R. (1990). An alternative "description of personality": The Big-Five factor structure. <em>Journal of Personality and Social Psychology, 59</em>(6), 1216–1229. https://doi.org/10.1037/0022-3514.59.6.1216</div>
+          <div class="ref-tags"><span class="ref-tag ocean">OCEAN</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">12</div>
+        <div class="ref-content">
+          <div class="ref-text">John, O. P., Naumann, L. P., &amp; Soto, C. J. (2008). Paradigm shift to the integrative Big Five trait taxonomy. In O. P. John, R. W. Robins, &amp; L. A. Pervin (Eds.), <em>Handbook of personality: Theory and research</em> (3rd ed., pp. 114–158). Guilford Press.</div>
+          <div class="ref-tags"><span class="ref-tag ocean">OCEAN</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">13</div>
+        <div class="ref-content">
+          <div class="ref-text">Roberts, B. W., Kuncel, N. R., Shiner, R., Caspi, A., &amp; Goldberg, L. R. (2007). The power of personality: The comparative validity of personality traits, socioeconomic status, and cognitive ability for predicting important life outcomes. <em>Perspectives on Psychological Science, 2</em>(4), 313–345. https://doi.org/10.1111/j.1745-6924.2007.00047.x</div>
+          <div class="ref-tags"><span class="ref-tag ocean">OCEAN</span><span class="ref-tag consumer">행동</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">14</div>
+        <div class="ref-content">
+          <div class="ref-text">Schmitt, D. P., Allik, J., McCrae, R. R., &amp; Benet-Martínez, V. (2007). The geographic distribution of Big Five personality traits: Patterns and profiles of human self-description across 56 nations. <em>Journal of Cross-Cultural Psychology, 38</em>(2), 173–212. https://doi.org/10.1177/0022022106297299</div>
+          <div class="ref-tags"><span class="ref-tag ocean">OCEAN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LADDERING / MEC -->
+    <div class="ref-section">
+      <div class="ref-sec-label">래더링 · Means-End Chain <span class="ref-sec-count">6건</span></div>
+
+      <div class="ref-item">
+        <div class="ref-num">15</div>
+        <div class="ref-content">
+          <div class="ref-text">Reynolds, T. J., &amp; Gutman, J. (1988). Laddering theory, method, analysis, and interpretation. <em>Journal of Advertising Research, 28</em>(1), 11–31.</div>
+          <div class="ref-tags"><span class="ref-tag ladder">래더링</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">16</div>
+        <div class="ref-content">
+          <div class="ref-text">Gutman, J. (1982). A means-end chain model based on consumer categorization processes. <em>Journal of Marketing, 46</em>(2), 60–72. https://doi.org/10.1177/002224298204600207</div>
+          <div class="ref-tags"><span class="ref-tag ladder">MEC</span><span class="ref-tag consumer">소비자</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">17</div>
+        <div class="ref-content">
+          <div class="ref-text">Olson, J. C., &amp; Reynolds, T. J. (1983). Understanding consumers' cognitive structures: Implications for advertising strategy. In L. Percy &amp; A. Woodside (Eds.), <em>Advertising and consumer psychology</em> (pp. 77–90). Lexington Books.</div>
+          <div class="ref-tags"><span class="ref-tag ladder">래더링</span><span class="ref-tag consumer">광고</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">18</div>
+        <div class="ref-content">
+          <div class="ref-text">ter Hofstede, F., Audenaert, A., Steenkamp, J.-B. E. M., &amp; Wedel, M. (1998). An investigation into the association pattern technique as a quantitative approach to measuring means-end chains. <em>International Journal of Research in Marketing, 15</em>(1), 37–50. https://doi.org/10.1016/S0167-8116(97)00027-5</div>
+          <div class="ref-tags"><span class="ref-tag ladder">래더링</span><span class="ref-tag method">측정</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">19</div>
+        <div class="ref-content">
+          <div class="ref-text">Veludo-de-Oliveira, T. M., Ikeda, A. A., &amp; Campomar, M. C. (2006). Discussing laddering application by the means-end chain theory. <em>The Qualitative Report, 11</em>(4), 626–642. https://doi.org/10.46743/2160-3715/2006.1669</div>
+          <div class="ref-tags"><span class="ref-tag ladder">래더링</span><span class="ref-tag method">질적연구</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">20</div>
+        <div class="ref-content">
+          <div class="ref-text">Walker, B. A., &amp; Olson, J. C. (1991). Means-end chains: Connecting products with self. <em>Journal of Business Research, 22</em>(2), 111–118. https://doi.org/10.1016/0148-2963(91)90045-Y</div>
+          <div class="ref-tags"><span class="ref-tag ladder">MEC</span><span class="ref-tag consumer">소비자</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSUMER BEHAVIOR -->
+    <div class="ref-section">
+      <div class="ref-sec-label">소비자 행동 이론 <span class="ref-sec-count">6건</span></div>
+
+      <div class="ref-item">
+        <div class="ref-num">21</div>
+        <div class="ref-content">
+          <div class="ref-text">Engel, J. F., Kollat, D. T., &amp; Blackwell, R. D. (1968). <em>Consumer behavior</em>. Holt, Rinehart and Winston.</div>
+          <div class="ref-tags"><span class="ref-tag consumer">소비자 행동</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">22</div>
+        <div class="ref-content">
+          <div class="ref-text">Kotler, P., &amp; Keller, K. L. (2016). <em>Marketing management</em> (15th ed.). Pearson.</div>
+          <div class="ref-tags"><span class="ref-tag consumer">마케팅</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">23</div>
+        <div class="ref-content">
+          <div class="ref-text">Maslow, A. H. (1943). A theory of human motivation. <em>Psychological Review, 50</em>(4), 370–396. https://doi.org/10.1037/h0054346</div>
+          <div class="ref-tags"><span class="ref-tag consumer">욕구위계</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">24</div>
+        <div class="ref-content">
+          <div class="ref-text">Rokeach, M. (1973). <em>The nature of human values</em>. Free Press.</div>
+          <div class="ref-tags"><span class="ref-tag consumer">가치</span><span class="ref-tag ladder">MEC</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">25</div>
+        <div class="ref-content">
+          <div class="ref-text">Solomon, M. R. (2019). <em>Consumer behavior: Buying, having, and being</em> (13th ed.). Pearson.</div>
+          <div class="ref-tags"><span class="ref-tag consumer">소비자 행동</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">26</div>
+        <div class="ref-content">
+          <div class="ref-text">Zeithaml, V. A. (1988). Consumer perceptions of price, quality, and value: A means-end model and synthesis of evidence. <em>Journal of Marketing, 52</em>(3), 2–22. https://doi.org/10.1177/002224298805200302</div>
+          <div class="ref-tags"><span class="ref-tag consumer">가치 인식</span><span class="ref-tag ladder">MEC</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESEARCH METHODOLOGY -->
+    <div class="ref-section">
+      <div class="ref-sec-label">연구 방법론 <span class="ref-sec-count">5건</span></div>
+
+      <div class="ref-item">
+        <div class="ref-num">27</div>
+        <div class="ref-content">
+          <div class="ref-text">Cohen, J. (1960). A coefficient of agreement for nominal scales. <em>Educational and Psychological Measurement, 20</em>(1), 37–46. https://doi.org/10.1177/001316446002000104</div>
+          <div class="ref-tags"><span class="ref-tag method">신뢰도</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">28</div>
+        <div class="ref-content">
+          <div class="ref-text">Koo, T. K., &amp; Li, M. Y. (2016). A guideline of selecting and reporting intraclass correlation coefficients for reliability research. <em>Journal of Chiropractic Medicine, 15</em>(2), 155–163. https://doi.org/10.1016/j.jcm.2016.02.012</div>
+          <div class="ref-tags"><span class="ref-tag method">ICC</span><span class="ref-tag method">신뢰도</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">29</div>
+        <div class="ref-content">
+          <div class="ref-text">Krippendorff, K. (2018). <em>Content analysis: An introduction to its methodology</em> (4th ed.). SAGE Publications.</div>
+          <div class="ref-tags"><span class="ref-tag method">내용분석</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">30</div>
+        <div class="ref-content">
+          <div class="ref-text">Landis, J. R., &amp; Koch, G. G. (1977). The measurement of observer agreement for categorical data. <em>Biometrics, 33</em>(1), 159–174. https://doi.org/10.2307/2529310</div>
+          <div class="ref-tags"><span class="ref-tag method">일치도</span><span class="ref-tag method">Kappa</span></div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <div class="ref-num">31</div>
+        <div class="ref-content">
+          <div class="ref-text">Shrout, P. E., &amp; Fleiss, J. L. (1979). Intraclass correlations: Uses in assessing rater reliability. <em>Psychological Bulletin, 86</em>(2), 420–428. https://doi.org/10.1037/0033-2909.86.2.420</div>
+          <div class="ref-tags"><span class="ref-tag method">ICC</span><span class="ref-tag method">신뢰도</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NAV BUTTONS -->
+    <div class="nav-buttons">
+      <a class="nav-btn" href="thesis-ch6.html">← 제6장: 결론</a>
+      <a class="nav-btn primary" href="thesis-appendix.html">부록: 원본 데이터 →</a>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<footer>M&amp;Serve · AI 페르소나 신뢰도 연구 · Research-Based Interview Protocol v1.0 · 2026.03</footer>
+</body>
+</html>

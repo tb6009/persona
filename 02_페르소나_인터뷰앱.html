@@ -3,20 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>엠앤에서 소비자 페르소나 인터뷰 — M&Serve</title>
+  <title>엠앤에서 소비자 페르소나 인터뷰</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
     /* TOP BAR */
-    .topbar { background: #1a2e4a; color: white; padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .topbar { background: #1a2e4a; color: white; padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
     .topbar-logo { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; color: #7eb3e0; text-transform: uppercase; }
-    .topbar-title { font-size: 14px; font-weight: 600; }
+    .topbar-title { font-size: 15px; font-weight: 600; }
     .topbar-badge { margin-left: auto; background: #2e6da4; font-size: 11px; padding: 3px 10px; border-radius: 20px; }
-    .topbar-ver { font-size: 10px; color: #4a7fa0; margin-left: 6px; }
-    .ai-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8dc46a; font-weight: 600; }
-    .ai-dot { width: 7px; height: 7px; background: #8dc46a; border-radius: 50%; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .topbar-ver { font-size: 10px; color: #4a7fa0; margin-left: 8px; }
 
     /* MAIN LAYOUT */
     .main { display: flex; flex: 1; overflow: hidden; }
@@ -35,22 +32,19 @@
     .brand-mlida { background: #1e4d7b; color: #7eb3e0; }
     .brand-ahgreet { background: #2d4a1e; color: #8dc46a; }
     .brand-both { background: #4a2d1e; color: #e0a06a; }
+
     .sidebar-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 12px 16px; }
     .sidebar-hint { padding: 8px 16px; font-size: 10px; color: #3d5a73; line-height: 1.5; }
 
     /* CHAT AREA */
     .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .chat-header { background: white; border-bottom: 1px solid #e8edf2; padding: 12px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .chat-header { background: white; border-bottom: 1px solid #e8edf2; padding: 14px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
     .chat-header-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
     .chat-header-info { flex: 1; }
-    .chat-header-name { font-size: 15px; font-weight: 700; color: #1a2e4a; }
+    .chat-header-name { font-size: 16px; font-weight: 700; color: #1a2e4a; }
     .chat-header-desc { font-size: 12px; color: #7a8fa5; margin-top: 2px; }
-    .chat-header-tags { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+    .chat-header-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
     .trait-tag { font-size: 11px; background: #eef3f8; color: #2e5a8e; padding: 2px 8px; border-radius: 4px; }
-    .reset-btn { margin-left: auto; font-size: 11px; padding: 4px 10px; border: 1px solid #d0dce8; border-radius: 6px; cursor: pointer; background: white; color: #7a8fa5; flex-shrink: 0; }
-    .reset-btn:hover { background: #f5f7fa; }
-    .export-btn { font-size: 11px; padding: 4px 10px; border: 1px solid #4a9fe0; border-radius: 6px; cursor: pointer; background: white; color: #2e6da4; margin-left: 8px; flex-shrink: 0; }
-    .export-btn:hover { background: #eef3f8; }
 
     .messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
     .welcome-msg { text-align: center; padding: 40px 20px; color: #9aafbe; }
@@ -74,14 +68,14 @@
     @keyframes blink { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
 
     /* QUICK QUESTIONS */
-    .quick-questions { padding: 10px 20px; background: white; border-top: 1px solid #eef2f6; }
+    .quick-questions { padding: 12px 24px; background: white; border-top: 1px solid #eef2f6; }
     .quick-label { font-size: 11px; color: #9aafbe; margin-bottom: 8px; font-weight: 600; letter-spacing: 0.05em; }
     .quick-btns { display: flex; gap: 8px; flex-wrap: wrap; }
     .quick-btn { font-size: 12px; padding: 6px 12px; border: 1px solid #d0dce8; border-radius: 16px; cursor: pointer; background: white; color: #2e5a8e; transition: all 0.15s; }
     .quick-btn:hover { background: #eef3f8; border-color: #4a9fe0; }
 
     /* INPUT */
-    .input-area { padding: 14px 20px; background: white; border-top: 1px solid #e8edf2; display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0; }
+    .input-area { padding: 16px 24px; background: white; border-top: 1px solid #e8edf2; display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0; }
     .input-box { flex: 1; border: 1px solid #d0dce8; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-family: inherit; resize: none; outline: none; max-height: 100px; line-height: 1.5; color: #1a2e4a; transition: border-color 0.15s; }
     .input-box:focus { border-color: #4a9fe0; }
     .send-btn { width: 42px; height: 42px; border-radius: 50%; background: #1a2e4a; border: none; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; font-size: 16px; }
@@ -126,12 +120,10 @@
 <body>
 
 <div class="topbar">
-  <a href="index.html" style="font-size:11px;color:#7eb3e0;text-decoration:none;padding:3px 10px;border:1px solid #3a5a7a;border-radius:6px;margin-right:4px;flex-shrink:0;">← 홈</a>
   <span class="topbar-logo">M&amp;Serve</span>
-  <span class="topbar-title">1:1 페르소나 인터뷰</span>
-  <div class="ai-indicator"><div class="ai-dot"></div>시뮬레이션 모드</div>
+  <span class="topbar-title">소비자 페르소나 인터뷰 시뮬레이터</span>
   <span class="topbar-badge">Phase 2 — 소비자 심층조사</span>
-  <span class="topbar-ver">v2.2 · 7인 · 리뷰 데이터 반영</span>
+  <span class="topbar-ver">v2.1 · 리뷰 데이터 반영</span>
 </div>
 
 <div class="main">
@@ -183,7 +175,7 @@
 
 <script>
 // ──────────────────────────────────────────────
-// PERSONA DATA  (v2.2 — 2026.03 리뷰 데이터 반영 · 7인)
+// PERSONA DATA  (v2.1 — 2026.03 리뷰 데이터 반영)
 // ──────────────────────────────────────────────
 const personas = [
 
@@ -468,10 +460,14 @@ const personas = [
 ];
 
 // ──────────────────────────────────────────────
-// OCEAN 설정
+// OCEAN 색상 팔레트
 // ──────────────────────────────────────────────
 const oceanColors = {
-  O: '#60a5fa', C: '#34d399', E: '#f59e0b', A: '#a78bfa', N: '#f87171'
+  O: '#60a5fa', // 개방성 — 파랑
+  C: '#34d399', // 성실성 — 초록
+  E: '#f59e0b', // 외향성 — 주황
+  A: '#a78bfa', // 친화성 — 보라
+  N: '#f87171'  // 신경성 — 빨강
 };
 const oceanLabels = {
   O: ['개방성', 'Openness'],
@@ -549,8 +545,6 @@ function renderChatHeader() {
         ${p.traits.map(t => `<span class="trait-tag">${t}</span>`).join('')}
       </div>
     </div>
-    <button class="reset-btn" onclick="resetChat()">대화 초기화</button>
-    <button class="export-btn" onclick="exportChat()">💾 텍스트 저장</button>
   `;
 }
 
@@ -558,6 +552,7 @@ function renderProfile() {
   const p = currentPersona;
   const brandClass = p.brand === 'mlida' ? 'brand-mlida' : (p.brand === 'ahgreet' ? 'brand-ahgreet' : 'brand-both');
 
+  // OCEAN bars HTML
   const oceanHTML = Object.entries(p.ocean).map(([key, val]) => `
     <div class="ocean-row">
       <div class="ocean-label">${oceanLabels[key][0]}<span>${oceanLabels[key][1]}</span></div>
@@ -694,15 +689,15 @@ function generateResponse(question) {
   const q = question.toLowerCase();
   const kws = currentPersona.keywords;
   const topicMap = {
-    가격:         ['가격','얼마','비싼','싸','예산','돈','원','투자','가성비','저렴','할인'],
-    디자인:       ['디자인','색','컬러','예쁜','모양','생김새','외관','색깔','인테리어','미관'],
-    품질:         ['품질','내구성','튼튼','소재','코팅','재질','안전','인증','오래','고장','as','에이에스'],
-    구매:         ['어디서','구매','쇼핑','사는','구입','구매처','채널','쿠팡','네이버','오늘의집','오프라인'],
-    요리:         ['요리','조리','음식','레시피','해먹','밥','반찬','끓이','굽기','볶기'],
-    브랜드:       ['브랜드','이름','회사','들어본','아는','신뢰','선호','좋아하는'],
-    불만:         ['불만','아쉬운','불편','싫은','문제','단점','개선','바라는','힘든','어려운'],
-    침구:         ['침구','청소기','진드기','먼지','uv','살균','매트리스','소파','무선','흡입','위생','털','반려','알레르기'],
-    라이프스타일: ['라이프스타일','생활','일상','하루','루틴','습관','시간','취미','여가']
+    가격:       ['가격','얼마','비싼','싸','예산','돈','원','투자','가성비','저렴','할인'],
+    디자인:     ['디자인','색','컬러','예쁜','모양','생김새','외관','색깔','인테리어','미관'],
+    품질:       ['품질','내구성','튼튼','소재','코팅','재질','안전','인증','오래','고장','as','에이에스','인증'],
+    구매:       ['어디서','구매','쇼핑','사는','구입','구매처','채널','쿠팡','네이버','오늘의집','오프라인'],
+    요리:       ['요리','조리','음식','요리법','레시피','해먹','밥','반찬','끓이','굽기','볶기'],
+    브랜드:     ['브랜드','이름','회사','들어본','아는','신뢰','선호','좋아하는','제일 좋아'],
+    불만:       ['불만','아쉬운','불편','싫은','문제','단점','개선','바라는','힘든','어려운'],
+    침구:       ['침구','청소기','진드기','먼지','uv','살균','매트리스','소파','무선','흡입','위생','털','반려'],
+    라이프스타일:['라이프스타일','생활','일상','하루','루틴','습관','시간','취미','여가']
   };
   let matched = null;
   let maxCount = 0;
@@ -733,51 +728,6 @@ function sendMessage() {
     addMessage('persona', response);
     document.getElementById('send-btn').disabled = false;
   }, 900 + Math.random() * 600);
-}
-
-function resetChat() {
-  if (!currentPersona) return;
-  if (!confirm(`${currentPersona.name}과의 대화를 초기화할까요?`)) return;
-  chatHistory[currentPersona.id] = [];
-  renderMessages();
-  addMessage('persona', currentPersona.intro);
-}
-
-function exportChat() {
-  if (!currentPersona) return;
-  const p = currentPersona;
-  const history = chatHistory[p.id] || [];
-  if (history.length === 0) {
-    alert('저장할 대화 내역이 없습니다.');
-    return;
-  }
-
-  let text = '='.repeat(52) + '\n';
-  text += `M&Serve 페르소나 인터뷰 기록\n`;
-  text += `페르소나: ${p.name} (${p.age}세 · ${p.job})\n`;
-  text += `아키타입: ${p.archetype} · 브랜드: ${p.brandLabel}\n`;
-  text += `날짜: ${new Date().toLocaleDateString('ko-KR')}\n`;
-  text += '='.repeat(52) + '\n\n';
-
-  history.forEach((msg) => {
-    const role = msg.role === 'user' ? '▶ 연구자' : `● ${p.name}`;
-    text += `[${msg.time}] ${role}\n`;
-    text += `${msg.text}\n\n`;
-  });
-
-  text += '='.repeat(52) + '\n';
-  text += `총 ${Math.floor(history.length / 2)}회 문답 · M&Serve Phase 2 소비자 심층조사\n`;
-
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const dateStr = new Date().toISOString().slice(0, 10);
-  a.download = `인터뷰_${p.name}_${dateStr}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 // Enter key

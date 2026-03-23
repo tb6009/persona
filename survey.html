@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>설문 시뮬레이터 — M&Serve</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR','Apple SD Gothic Neo',sans-serif; background:#f0f2f5; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+    .topbar { background:#1a2e4a; color:white; padding:10px 20px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .topbar a { font-size:11px; color:#7eb3e0; text-decoration:none; padding:3px 10px; border:1px solid #3a5a7a; border-radius:6px; flex-shrink:0; }
+    .topbar-logo { font-size:13px; font-weight:700; letter-spacing:.1em; color:#7eb3e0; text-transform:uppercase; }
+    .topbar-title { font-size:14px; font-weight:600; }
+    .topbar-badge { margin-left:auto; background:#4a3a7a; font-size:11px; padding:3px 10px; border-radius:20px; }
+
+    .main { display:flex; flex:1; overflow:hidden; }
+
+    /* LEFT: PERSONA + QUESTION NAV */
+    .left-panel { width:240px; background:#1a2e4a; display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
+    .panel-section { padding:14px 16px 8px; }
+    .panel-label { font-size:10px; font-weight:700; color:#5a7fa0; letter-spacing:.12em; text-transform:uppercase; margin-bottom:10px; }
+    .persona-btn { display:flex; align-items:center; gap:8px; padding:8px 10px; cursor:pointer; border-left:3px solid transparent; border-radius:6px; transition:all .15s; margin-bottom:4px; }
+    .persona-btn:hover { background:rgba(255,255,255,.06); }
+    .persona-btn.active { background:rgba(255,255,255,.1); border-left-color:#4a9fe0; }
+    .pb-emoji { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+    .pb-name { font-size:12px; font-weight:600; color:#e0eaf5; }
+    .pb-sub { font-size:10px; color:#5a7fa0; }
+    .brand-tag { font-size:9px; padding:1px 5px; border-radius:3px; font-weight:700; }
+    .brand-mlida { background:#1e4d7b; color:#7eb3e0; }
+    .brand-ahgreet { background:#2d4a1e; color:#8dc46a; }
+    .brand-both { background:#4a2d1e; color:#e0a06a; }
+
+    .divider { height:1px; background:rgba(255,255,255,.07); margin:8px 16px; }
+
+    .q-nav { padding:0 10px 10px; }
+    .q-nav-label { font-size:10px; font-weight:700; color:#5a7fa0; letter-spacing:.1em; text-transform:uppercase; padding:8px 6px 6px; }
+    .q-section-head { font-size:10px; color:#4a7fa0; padding:6px 6px 3px; font-weight:600; letter-spacing:.05em; }
+    .q-btn { display:flex; align-items:center; gap:6px; padding:5px 6px; border-radius:5px; cursor:pointer; font-size:11px; color:#7a9ab5; transition:all .12s; line-height:1.3; }
+    .q-btn:hover { background:rgba(255,255,255,.06); color:#c0d8ee; }
+    .q-btn.active { background:rgba(74,159,224,.2); color:#7eb3e0; font-weight:600; }
+    .q-btn.answered { color:#4a9fe0; }
+    .q-num { width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; font-weight:700; }
+    .q-btn.answered .q-num { background:#4a9fe0; color:white; }
+    .q-btn.active .q-num { background:#2e6da4; color:white; }
+
+    /* CENTER: QUESTION + RESPONSE */
+    .center { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .q-header { background:white; border-bottom:1px solid #e8edf2; padding:14px 24px; flex-shrink:0; }
+    .q-progress { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .progress-bar { flex:1; height:5px; background:#eef2f6; border-radius:3px; overflow:hidden; }
+    .progress-fill { height:100%; background:#4a9fe0; border-radius:3px; transition:width .3s ease; }
+    .progress-label { font-size:11px; color:#9aafbe; white-space:nowrap; }
+    .q-section-tag { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; background:#ede9fe; color:#7c3aed; margin-bottom:8px; display:inline-block; }
+    .q-text { font-size:15px; font-weight:700; color:#1a2e4a; line-height:1.6; }
+    .q-sub { font-size:11px; color:#9aafbe; margin-top:4px; }
+
+    .q-body { flex:1; overflow-y:auto; padding:20px 24px; }
+
+    /* RESPONSE AREA */
+    .response-card { background:white; border-radius:14px; padding:20px; margin-bottom:16px; }
+    .rc-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+    .rc-emoji { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .rc-name { font-size:14px; font-weight:700; color:#1a2e4a; }
+    .rc-meta { font-size:11px; color:#9aafbe; }
+    .rc-response { font-size:13px; color:#2e3f52; line-height:1.8; background:#f8fafc; border-radius:10px; padding:14px; border-left:3px solid; }
+    .rc-empty { font-size:13px; color:#b0bec5; font-style:italic; padding:12px; text-align:center; }
+    .respond-btn { margin-top:12px; font-size:12px; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:600; transition:all .15s; }
+    .typing { display:flex; gap:4px; padding:8px 12px; align-items:center; }
+    .typing-dot { width:6px; height:6px; border-radius:50%; background:#9aafbe; animation:blink 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay:.2s; }
+    .typing-dot:nth-child(3) { animation-delay:.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+
+    /* ALL RESPONSES VIEW */
+    .all-view { padding:20px 24px; overflow-y:auto; flex:1; }
+    .all-title { font-size:14px; font-weight:700; color:#1a2e4a; margin-bottom:16px; }
+    .all-response-item { background:white; border-radius:10px; padding:14px; margin-bottom:12px; }
+    .ari-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+
+    /* BOTTOM NAV */
+    .q-footer { background:white; border-top:1px solid #e8edf2; padding:12px 24px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .nav-btn { padding:8px 20px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:all .15s; }
+    .nav-prev { background:#eef3f8; color:#2e5a8e; }
+    .nav-prev:hover { background:#dbeafe; }
+    .nav-next { background:#1a2e4a; color:white; }
+    .nav-next:hover { background:#2e4f7a; }
+    .nav-all { background:#f0f4f8; color:#5a7fa0; font-size:12px; }
+    .export-btn { margin-left:auto; font-size:11px; padding:6px 12px; border:1px solid #4a9fe0; border-radius:6px; cursor:pointer; background:white; color:#2e6da4; }
+    .export-btn:hover { background:#eef3f8; }
+
+    /* RIGHT PROFILE */
+    .right-panel { width:220px; background:white; border-left:1px solid #e8edf2; overflow-y:auto; flex-shrink:0; padding:16px; }
+    .rp-title { font-size:10px; font-weight:700; color:#9aafbe; letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+    .ocean-row { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+    .ocean-label { font-size:10px; color:#7a8fa5; width:50px; flex-shrink:0; }
+    .ocean-track { flex:1; height:6px; background:#eef2f6; border-radius:3px; overflow:hidden; }
+    .ocean-fill { height:100%; border-radius:3px; }
+    .ocean-score { font-size:10px; font-weight:700; color:#2e5a8e; width:14px; text-align:right; }
+    .stat-item { display:flex; justify-content:space-between; font-size:11px; padding:5px 0; border-bottom:1px solid #f5f7fa; }
+    .stat-key { color:#9aafbe; }
+    .stat-val { color:#2e3f52; font-weight:600; }
+    .no-sel { color:#b0bec5; font-size:12px; text-align:center; margin-top:40px; }
+
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-thumb { background:#d0dce8; border-radius:4px; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html">← 홈</a>
+  <span class="topbar-logo">M&amp;Serve</span>
+  <span class="topbar-title">설문 시뮬레이터 — 기준 설문 30문항</span>
+  <span class="topbar-badge">Phase 2 · AI 페르소나</span>
+</div>
+
+<div class="main">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel-section">
+      <div class="panel-label">페르소나 선택</div>
+      <div id="persona-list"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="q-nav">
+      <div class="q-nav-label">문항 목록</div>
+      <div id="q-nav-list"></div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div class="q-header">
+      <div class="q-progress">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <span class="progress-label" id="progress-label">0 / 30</span>
+      </div>
+      <div id="q-section-tag" class="q-section-tag">섹션</div>
+      <div class="q-text" id="q-text">왼쪽에서 페르소나를 선택하세요</div>
+      <div class="q-sub" id="q-sub"></div>
+    </div>
+
+    <div class="q-body" id="q-body">
+      <div style="text-align:center;padding:60px 20px;color:#9aafbe;">
+        <div style="font-size:48px;margin-bottom:16px;">📋</div>
+        <div style="font-size:16px;font-weight:700;color:#5a7fa0;margin-bottom:8px;">설문 시뮬레이터</div>
+        <div style="font-size:13px;line-height:1.7;">AI 페르소나 연구 프로토콜 기반 30문항으로<br>각 페르소나의 예상 응답을 시뮬레이션합니다.<br><br>왼쪽에서 페르소나를 선택하고<br>문항별 응답을 확인하세요.</div>
+      </div>
+    </div>
+
+    <div class="q-footer">
+      <button class="nav-btn nav-prev" id="btn-prev" onclick="navigate(-1)" disabled>← 이전</button>
+      <button class="nav-btn nav-all" onclick="toggleAllView()">전체 보기</button>
+      <button class="nav-btn nav-next" id="btn-next" onclick="navigate(1)" disabled>다음 →</button>
+      <button class="export-btn" onclick="exportSurvey()">💾 결과 저장</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="rp-title">OCEAN 프로파일</div>
+    <div id="ocean-panel"><div class="no-sel">페르소나를<br>선택하세요</div></div>
+    <div style="margin-top:16px;"></div>
+    <div class="rp-title">응답 현황</div>
+    <div id="stats-panel"></div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  // SECTION A — 생활 전반
+  { id:'A1', sec:'A. 생활', secColor:'#7c3aed', text:'평소 하루 루틴을 간단히 설명해 주시겠어요? 아침 기상부터 퇴근 후까지, 어떤 흐름으로 생활하세요?', sub:'AIO Lifestyle Model (Wells & Tigert, 1971)' },
+  { id:'A2', sec:'A. 생활', secColor:'#7c3aed', text:'하루 중 \'나만의 시간\'이 있다면, 그 시간에 주로 무엇을 하시나요? 그게 본인에게 어떤 의미를 갖나요?', sub:'Self-concept theory (Sirgy, 1982)' },
+  { id:'A3', sec:'A. 생활', secColor:'#7c3aed', text:'집이라는 공간이 본인에게 어떤 의미인가요? \'집에서 잘 산다\'는 게 어떤 모습인지 묘사해 주세요.', sub:'Home as haven concept (Sixsmith, 1986)' },
+  { id:'A4', sec:'A. 생활', secColor:'#7c3aed', text:'최근 6개월 동안 가장 만족스럽게 구매한 물건이나 경험은 무엇이었나요? 그 이유는?', sub:'Peak experience in consumption (Holbrook & Hirschman, 1982)' },
+  { id:'A5', sec:'A. 생활', secColor:'#7c3aed', text:'본인을 \'미니멀리스트\'라고 생각하시나요, 아니면 \'맥시멀리스트\'에 가깝나요? 왜 그렇게 생각하세요?', sub:'Voluntary simplicity (Etzioni, 1998)' },
+  // SECTION B — 디자인 감수성
+  { id:'B1', sec:'B. 디자인', secColor:'#1d4ed8', text:'평소 디자인을 \'좋다\'고 느낄 때, 어떤 요소가 가장 크게 작용하나요? (형태, 색상, 재질, 단순함 등)', sub:'Product aesthetics (Bloch, 1995)' },
+  { id:'B2', sec:'B. 디자인', secColor:'#1d4ed8', text:'소형가전 같은 기능 제품에서도 디자인이 구매 결정에 영향을 미친다고 생각하세요? 본인의 경험은?', sub:'Form-function trade-off (Norman, 2004)' },
+  { id:'B3', sec:'B. 디자인', secColor:'#1d4ed8', text:'지금 집에서 가장 \'예쁘다\'고 생각하는 물건은 무엇인가요? 그 물건의 어떤 점이 마음에 드세요?', sub:'Typicality vs. novelty in aesthetics (Hekkert et al., 2003)' },
+  { id:'B4', sec:'B. 디자인', secColor:'#1d4ed8', text:'가전·주방 제품을 고를 때 \'집 인테리어와 어울리는가\'를 얼마나 고려하나요?', sub:'Ensemble effect in product design (Bloch, 1995)' },
+  { id:'B5', sec:'B. 디자인', secColor:'#1d4ed8', text:'인스타그램·핀터레스트 등 SNS가 본인의 인테리어·제품 취향에 영향을 준다고 느끼나요? 어떻게?', sub:'Social influence on aesthetics (Childers et al., 2001)' },
+  // SECTION C — 소비 생활
+  { id:'C1', sec:'C. 소비', secColor:'#0f766e', text:'소형가전을 구매할 때 정보를 주로 어디서 얻으시나요? 온라인 리뷰, 지인 추천, 브랜드 SNS 등 비교해서 말씀해 주세요.', sub:'Information search behavior (Bettman, 1979)' },
+  { id:'C2', sec:'C. 소비', secColor:'#0f766e', text:'구매 전 리뷰를 얼마나 꼼꼼히 보시나요? 어떤 종류의 리뷰가 신뢰가 가세요?', sub:'eWOM trust (Cheung & Thadani, 2012)' },
+  { id:'C3', sec:'C. 소비', secColor:'#0f766e', text:'온라인 구매와 오프라인 구매 중 소형가전은 어디서 사는 편인가요? 그 이유는?', sub:'Multichannel shopping (Neslin et al., 2006)' },
+  { id:'C4', sec:'C. 소비', secColor:'#0f766e', text:'구매를 \'망설이다가 결국 샀던\' 경험, 혹은 \'충동구매했다가 후회한\' 경험이 있으신가요?', sub:'Impulse buying vs. deliberate purchase (Rook, 1987)' },
+  { id:'C5', sec:'C. 소비', secColor:'#0f766e', text:'제품 가격을 볼 때 \'이 정도면 합리적이다\'라고 느끼는 기준이 있나요? 어떻게 판단하세요?', sub:'Price fairness perception (Xia, Monroe & Cox, 2004)' },
+  { id:'C6', sec:'C. 소비', secColor:'#0f766e', text:'어떤 브랜드의 제품을 한 번 구매한 뒤 다시 같은 브랜드를 선택한 경험이 있나요? 그 이유는?', sub:'Brand loyalty (Oliver, 1999)' },
+  { id:'C7', sec:'C. 소비', secColor:'#0f766e', text:'제품을 구매할 때 \'지속 가능성\' 또는 \'오래 쓸 수 있는가\'를 고려하나요? 내구성 vs. 트렌드 중 무엇이 더 중요한가요?', sub:'Durability vs. obsolescence (Cooper, 2004)' },
+  { id:'C8', sec:'C. 소비', secColor:'#0f766e', text:'구매 후 그 제품에 대해 주변에 이야기하거나 SNS에 올린 적 있나요? 어떤 경우에 공유하게 되나요?', sub:'Brand advocacy (Kumar et al., 2010)' },
+  { id:'C9', sec:'C. 소비', secColor:'#0f766e', text:'\'이건 꼭 직접 써보거나 만져봐야 산다\'는 제품군이 있으신가요? 소형가전도 그런가요?', sub:'Tactile experience in purchase (Peck & Childers, 2003)' },
+  { id:'C10', sec:'C. 소비', secColor:'#0f766e', text:'플래그십 스토어나 팝업스토어 같은 브랜드 오프라인 공간을 방문한 경험이 있으신가요? 구매에 영향을 줬나요?', sub:'Experiential retailing (Pine & Gilmore, 1998)' },
+  // SECTION D — 밀다 브랜드 경험
+  { id:'D1', sec:'D. 브랜드', secColor:'#b45309', text:'밀다를 처음 알게 된 계기는 무엇인가요? 그때 첫인상은 어떠셨나요?', sub:'Brand awareness & first impression (Keller, 1993)' },
+  { id:'D2', sec:'D. 브랜드', secColor:'#b45309', text:'밀다의 어떤 점이 다른 소형가전 브랜드와 다르다고 느끼시나요?', sub:'Brand differentiation (Keller, 2003)' },
+  { id:'D3', sec:'D. 브랜드', secColor:'#b45309', text:'밀다 제품을 처음 구매하기 전, 어떤 고민이 있었나요? 무엇이 최종 결정을 이끌었나요?', sub:'Laddering: attribute → consequence → value (Reynolds & Gutman, 1988)' },
+  { id:'D4', sec:'D. 브랜드', secColor:'#b45309', text:'밀다 제품을 사용하면서 \'역시 잘 샀다\'고 느낀 순간이 있다면 언제였나요?', sub:'Post-purchase satisfaction (Oliver, 1980)' },
+  { id:'D5', sec:'D. 브랜드', secColor:'#b45309', text:'반대로 밀다에 아쉬움이나 불만을 느낀 경험이 있나요? 어떤 상황이었나요?', sub:'Complaint behavior & expectation disconfirmation (Zeithaml et al., 1993)' },
+  { id:'D6', sec:'D. 브랜드', secColor:'#b45309', text:'밀다라는 브랜드에 \'사람\'이 있다면 어떤 사람일 것 같나요? 성격, 스타일, 가치관으로 묘사해 주세요.', sub:'Brand personality (Aaker, 1997)' },
+  { id:'D7', sec:'D. 브랜드', secColor:'#b45309', text:'밀다 제품을 주변에 추천한 적 있나요? 추천할 때 어떤 말로 설명하셨나요?', sub:'Net Promoter behavior (Reichheld, 2003)' },
+  { id:'D8', sec:'D. 브랜드', secColor:'#b45309', text:'밀다 브랜드가 앞으로 어떻게 발전했으면 하나요? 제품 라인업, 디자인, 서비스 중 가장 기대하는 방향은?', sub:'Brand extension willingness (Aaker & Keller, 1990)' },
+  // SECTION E — 심화 투사
+  { id:'E1', sec:'E. 심화', secColor:'#9d174d', text:'"소형가전은 ___이다" — 빈칸에 가장 먼저 떠오르는 단어나 문장을 말해주세요.', sub:'Sentence completion projective technique' },
+  { id:'E2', sec:'E. 심화', secColor:'#9d174d', text:'밀다 에어프라이어/블렌더가 어느 날 갑자기 사라진다면, 일상에서 어떤 부분이 달라질 것 같나요?', sub:'Brand dependency & emotional attachment (Fournier, 1998)' },
+];
+
+const PERSONAS = [
+  {
+    id:0, name:'박지민', age:26, emoji:'👩‍💻', avatarBg:'#dbeafe', job:'스타트업 디자이너', brand:'mlida', brandLabel:'밀다',
+    ocean:{O:4,C:3,E:3,A:3,N:2},
+    responses:{
+      A1:'아침에 8시쯤 일어나서 밀다 블렌더로 스무디 만들고 노트북 켜서 슬랙 확인하는 게 루틴이에요. 재택이랑 출근을 번갈아 하는데, 퇴근 후엔 에너지 있는 날엔 유튜브에서 디자인 트렌드 영상 보고 사이드 프로젝트 조금씩 작업해요. 자기 전엔 꼭 인스타 피드 훑어보고 자요 😅',
+      A2:'저한테 \'나만의 시간\'은 아침 30분이에요. 블렌더 돌리고 스무디 마시면서 피드 보는 그 시간이요. 회사 업무 생각 안 하고 그냥 내가 좋아하는 것들 흡수하는 느낌? ㄹㅇ 그게 충전이 되더라고요.',
+      A3:'저한테 집은 \'나를 리셋하는 공간\'이에요. 원룸이라 작긴 한데, 그 안에서 동선이 깔끔하고 물건이 정리돼 있으면 진짜 숨 쉬어지는 느낌? 부피 크고 못생긴 가전이 하나라도 있으면 기분이 묘하게 다운되거든요 ㅋㅋ.',
+      A4:'밀다 에어프라이어 산 게 제일 대박이었어요 🎉. 솔직히 에어프라이어는 예전부터 사고 싶었는데 디자인이 다들 너무 투박해서 계속 참았거든요. 근데 밀다 건 진짜 예쁘고 슬림해서 원룸에도 잘 맞고, 기능도 충분해요.',
+      A5:'미니멀리스트 지향인데 100%는 아닌 것 같아요. 물건 자체는 줄이려고 하는데, \'좋은 거 하나 제대로\'가 철학이에요. 싸고 못생긴 거 여러 개보다 비싸도 예쁘고 좋은 거 하나.',
+      B1:'디자인이요? 저한테는 \'집에 뒀을 때 공간이랑 어울리는가\'가 제일 커요. 아무리 기능이 좋아도 공간에 이질감을 주면 사기 싫어지거든요. 그다음은 단순함 — 너무 복잡한 건 청소도 귀찮고요.',
+      B2:'소형가전에서도 디자인은 진짜 중요해요. 기능이 비슷하면 당연히 예쁜 걸 사는 거고, 예쁜 게 없으면 그냥 안 사게 돼요. 제가 밀다 에어프라이어를 선택한 이유도 솔직히 디자인이 50%였어요.',
+      B3:'밀다 에어프라이어요 🤍. 흰색 매트 질감에 버튼 배치가 심플한 게 진짜 마음에 들어요. 카운터에 올려두면 인테리어 소품처럼 보이거든요.',
+      B4:'엄청 많이 고려해요. 제 원룸이 화이트+우드 톤인데, 거기서 튀는 제품은 사기 싫어요. 색이 맞는지 먼저 보고 그다음에 기능 봐요.',
+      B5:'엄청 영향받죠. 인스타에서 \'자취방 인테리어\' 피드 보다가 \'저 에어프라이어 뭐야?\' 하고 찾아보는 게 일상이에요. 핀터레스트는 가끔씩 쓰고, 틱톡에서 \'소형가전 추천\' 영상도 자주 봐요.',
+      C1:'유튜브가 제일이에요. \'OO 추천 2026\' 이런 영상 찾아보면 진짜 비교가 잘 돼 있거든요. 그다음에 네이버쇼핑 가서 리뷰 확인하고요. 지인 추천은 참고만 하고 직접 검색은 꼭 해요.',
+      C2:'꽤 꼼꼼히 봐요. 별점 4.5 이상인 것 중에 리뷰 500개 이상이 기준이에요. 사진 있는 후기 위주로 보고, \'몇 달 쓴 솔직한 후기\' 이런 거 제일 좋아요. 1점 리뷰도 꼭 봐요.',
+      C3:'소형가전은 거의 온라인이요. 오프라인은 귀찮고, 온라인에서 정보도 더 많고 가격도 더 싸거든요. 근데 진짜 비싼 건 오프라인에서 직접 보고 싶기도 해요.',
+      C4:'미니 프로젝터 샀다가 후회한 적 있어요 😅. \'홈시네마 느낌 연출하면 좋잖아 → 회의 때도 쓸 수 있잖아\' 이렇게 합리화하다 샀는데 결국 별로 안 썼거든요. 밀다 제품은 후회가 없었어요.',
+      C5:'소형가전 기준으로 보면 5만원대 이하는 \'한번 써볼 만하다\', 5~10만원은 \'이거 진짜 쓸지 검증 후에 사야지\', 10만원 이상은 \'리뷰 엄청 꼼꼼히 봐야지\' 이런 느낌이에요.',
+      C6:'밀다요! 블렌더 샀다가 에어프라이어도 샀어요. 한 번 믿음이 생기니까 새 제품 나오면 자동으로 관심이 가더라고요. 브랜드 이미지가 내 취향이랑 맞으면 계속 사게 되는 것 같아요.',
+      C7:'요즘 \'오래 쓸 수 있는가\'를 더 많이 보게 됐어요. 트렌드 타는 건 충동구매 확률이 높아서요. 밀다는 클래식한 디자인이라 질리지 않을 것 같아서 오래 쓸 수 있을 것 같아요.',
+      C8:'만족한 제품은 자연스럽게 공유하게 돼요. 친구들 인테리어 얘기 나올 때 \'이거 어때?\' 하고 추천하거나, 인스타에 올리기도 해요. 밀다 에어프라이어는 인스타에 올렸어요 📸.',
+      C9:'소형가전은 이제 거의 온라인으로만 사요. 직접 만져봐야 하는 건 가구나 옷 정도? 가전은 리뷰에서 크기랑 무게 정보 충분히 나오거든요.',
+      C10:'밀다 팝업이 있다면 진짜 가고 싶어요. 요즘 브랜드 팝업 붐이잖아요. 실제로 써보고 다른 제품도 구경할 수 있으면 구매로 이어질 것 같아요.',
+      D1:'인스타 피드에서 우연히 봤어요. 첫인상은 \'어? 소형가전인데 이렇게 예뻐도 되는 거야?\' 였어요. 원래 소형가전은 투박하다고 생각했는데, 밀다 보면서 그 편견이 깨졌어요.',
+      D2:'디자인이 진짜 차별점이에요. 기능이 비슷한 제품들 중에서 밀다만 \'집에 뒀을 때 인테리어가 되는\' 디자인을 갖고 있어요. 그리고 가격도 합리적인데 퀄리티가 따라줘서 좋아요.',
+      D3:'\'이 가격에 이렇게 예쁠 수 있나?\' 하는 의심이요 ㅋㅋ. 그래서 리뷰를 엄청 꼼꼼히 봤어요. 6개월 이상 쓴 후기들에서 불만이 별로 없고, 고장 얘기도 없길래 결국 결제했어요.',
+      D4:'첫날 사용하고 나서 \'이걸 왜 이제 샀지?\' 싶었어요. 에어프라이어로 냉동감자 구웠는데 전자레인지랑 맛이 완전 달라서 진짜 신세계였고요. 카운터에 올려두니까 주방이 예뻐진 것도 만족스러웠어요.',
+      D5:'음, 처음에 설명서가 좀 불친절하다고 느꼈어요. 직관적으로 쓸 수 있긴 한데, 온도·시간 세팅 가이드라인 같은 게 좀 더 친절하게 있었으면 했어요. 특히 처음 소형가전 사는 사람들한테는요.',
+      D6:'밀다가 사람이라면요, 취향이 확실하고 내 물건에 가치를 두는 2~30대 여성 같아요. \'예쁜 게 좋은 거야\'를 당연하게 생각하고, 실용성도 포기 안 하는. 인스타에 집 사진 올리는 걸 즐기는 사람요.',
+      D7:'있어요! 원룸 사는 친구한테 \'에어프라이어 살 거면 밀다 봐봐, 디자인이 진짜 예뻐\' 했어요. 인스타에서 내 사진 보고 물어보기도 하고요. 총 1명한테 직접 추천했어요.',
+      D8:'블렌더 용량 다양화가 제일 먼저 해줬으면 해요. 그리고 유튜브나 인스타에 레시피 채널이 생겼으면 좋겠어요. 팝업도 해주면 진짜 갈 것 같아요. 아, 그리고 에어프라이어 색상이 좀 더 다양해지면 좋겠어요.',
+      E1:'"소형가전은 일상의 퀄리티를 올려주는 도구"이다. 없어도 살 수 있는데, 있으면 삶의 만족도가 확 달라지는 것들이잖아요.',
+      E2:'아침 루틴이 흔들릴 것 같아요. 스무디 만드는 게 하루 시작 의식 같은 건데, 그게 없어지면 뭔가 허전할 것 같아요. 에어프라이어도 없어지면 주방이 왠지 허전해질 것 같고요. 바로 다시 살 것 같아요, 밀다로.',
+    }
+  },
+  {
+    id:1, name:'이서연', age:31, emoji:'🥗', avatarBg:'#d1fae5', job:'초등학교 교사', brand:'mlida', brandLabel:'밀다',
+    ocean:{O:3,C:5,E:2,A:4,N:3},
+    responses:{
+      A1:'아침 6시 30분에 일어나서 물 한 잔 마시고 스트레칭 해요. 그다음엔 전날 준비해둔 재료로 스무디를 만들고요. 학교는 7시 50분쯤 출발해요. 퇴근하면 장을 보거나 운동하고 저녁 준비해요. 11시 이전엔 꼭 자려고 노력하는 편이에요.',
+      A2:'아침 스무디 만드는 30분이요. 조용하게 음악 들으면서 채소 씻고 블렌더 돌리는 시간이 명상 같은 느낌이에요. 그 루틴이 하루를 잘 시작하게 해줘요.',
+      A3:'집은 \'회복하는 공간\'이에요. 학교에서 에너지를 많이 쓰고 오니까, 집에 오면 조용하고 정돈된 상태여야 쉬어지는 느낌이에요. 깔끔하고 건강한 공간이 제 이상이에요.',
+      A4:'밀다 블렌더요. 이전에 다른 블렌더 두 번 샀다가 세척이 귀찮아서 결국 방치했는데, 밀다는 세척이 진짜 편해서 지금까지 매일 쓰고 있어요. 소비가 습관을 만든다는 걸 느꼈어요.',
+      A5:'미니멀리스트에 가까운 것 같아요. 물건 자체는 많지 않은데, 사는 건 꼼꼼하게 따져서 사요. 한 번 살 때 오래 쓸 것만 사자는 주의예요.',
+      B1:'저한테는 관리하기 쉬운 디자인이 제일 중요해요. 이음새가 복잡하거나 세척하기 어려운 구조면 위생 걱정이 생기거든요. 그다음이 클래식하고 질리지 않는 형태요.',
+      B2:'소형가전에서도 디자인은 중요해요. 못생기면 쓰기 싫어지고, 쓰기 싫어지면 방치돼요. 그러면 건강 루틴도 같이 무너지는 경험을 해봤어요.',
+      B3:'밀다 블렌더요. 하얀색에 심플한 라인이 주방에 자연스럽게 녹아 있어요. 그리고 세척하기 쉬운 구조가 실용적이면서 미적으로도 깔끔해서 좋아요.',
+      B4:'많이 고려해요. 저는 화이트+실버 톤을 유지하고 있어서 거기서 튀는 건 사기 싫어요. 색이 맞는지 먼저 확인하고 그다음에 기능이요.',
+      B5:'크게 영향은 안 받는 편인데, 유튜브에서 영양사나 건강 채널에 등장하는 제품은 관심이 생겨요. 인스타그램보다는 실용적 정보 위주로 탐색하는 편이에요.',
+      C1:'유튜브에서 영양사나 전문가 채널 추천 먼저 봐요. 그다음에 네이버에서 실구매 리뷰 확인하고요. 광고성 후기랑 실제 후기 구분하는 법을 나름대로 익혔어요.',
+      C2:'매우 꼼꼼히 봐요. 리뷰 건수보다 내용이 더 중요해요. \'6개월 이상 쓴 후기\', \'소재 관련 언급\', \'세척 편의성 언급\' 이런 키워드 찾아서 읽어요.',
+      C3:'소형가전은 온라인이요. 하지만 오프라인에서 직접 보고 싶을 때도 있어요. 특히 소재를 손으로 만져보고 싶은 경우요.',
+      C4:'있어요. 한 번은 디자인만 보고 충동구매했다가, 소재 정보를 나중에 확인하니까 좀 찜찜했어요. 그 이후로 소재는 구매 전에 꼭 확인하게 됐어요.',
+      C5:'가격보다 가치 기준이에요. 건강에 도움 되는 기능이면 10만원 이상도 합리적이라고 생각해요. 싸게 사고 자주 바꾸는 것보다 좋은 거 하나 오래 쓰는 게 낫더라고요.',
+      C6:'밀다요. 블렌더 만족도가 높아서 에어프라이어도 밀다로 알아보고 있어요. 한 번 신뢰가 쌓이면 다른 제품도 자연스럽게 관심이 가게 되는 것 같아요.',
+      C7:'오래 쓸 수 있는가를 훨씬 더 중요하게 생각해요. 트렌드는 금방 지나가지만, 좋은 도구는 오래 써야 진가가 나오거든요.',
+      C8:'건강 관련 제품이면 주변에 추천해요. 특히 비슷한 라이프스타일 가진 지인한테요. 밀다 블렌더는 이미 2명한테 추천했어요. SNS에는 잘 안 올리지만, 대화 중에 자연스럽게 언급해요.',
+      C9:'가구나 옷은 직접 봐야 하는데, 소형가전은 리뷰로 충분히 판단이 돼요. 다만 소재는 사진만으로 판단이 어려울 때가 있어서 상세페이지에 소재 정보가 상세하게 있으면 좋겠어요.',
+      C10:'아직 가본 적은 없는데, 건강 관련 팝업이면 관심 있어요. 특히 요리 시연이나 소재 설명 같은 콘텐츠가 있으면 가고 싶을 것 같아요.',
+      D1:'지인이 먼저 추천해줬어요. 처음엔 \'중소 브랜드인데 괜찮을까?\' 했는데, 직접 써보고 \'아, 이래서 추천했구나\' 싶었어요. 첫인상은 \'깔끔하고 신뢰가 가는 디자인\'이었어요.',
+      D2:'소재 정보를 투명하게 제공하는 것 같아서 신뢰가 가요. 상세페이지에 소재 설명이 있고, 세척 방법도 명확하게 나와 있어서 좋았어요.',
+      D3:'소재 안전성이 걱정됐어요. 코팅 제품인데 환경호르몬은 없는지, 장기적으로 써도 괜찮은지 고민했어요. 지인 후기랑 소재 정보 확인 후에 결정했어요.',
+      D4:'사용 3개월 됐을 때요. 매일 아침 스무디 만들면서 블렌더가 완전히 루틴으로 자리 잡았을 때, \'이게 내 습관이 됐구나\' 싶었어요. 단순한 제품이 아니라 내 일상의 일부가 된 느낌이에요.',
+      D5:'용량이 하나밖에 없는 게 좀 아쉬워요. 1인 가구용 작은 용량도 있으면 좋겠어요. 그리고 레시피 콘텐츠가 좀 더 다양하면 활용도가 높아질 것 같아요.',
+      D6:'밀다가 사람이라면, 기준이 분명하고 건강을 챙기는 30대 중반 여성 같아요. 설명 없이도 좋은 걸 아는 분. 화려하지 않지만 선택이 세련된 사람이요.',
+      D7:'있어요. 건강에 관심 있는 친구 2명한테 추천했어요. "세척 편해서 귀찮음 없이 매일 쓸 수 있어, 그게 핵심이야"라고 했어요.',
+      D8:'용량 다양화, 레시피 콘텐츠 확충, 부품 교체 서비스 이 세 가지가 생겼으면 해요. 건강한 라이프스타일과 연결된 브랜드 방향성은 지금처럼 유지해줬으면 해요.',
+      E1:'"소형가전은 일상의 습관을 만들어주는 도구"이다. 어떤 가전을 갖고 있느냐가 어떤 생활을 하느냐와 연결된다고 생각해요.',
+      E2:'아침 루틴이 흔들릴 것 같아요. 채소 주스를 매일 만들어 먹는 게 이제 습관이 됐는데, 믹서기 없이는 그 루틴을 이어가기 어렵거든요. 아마 밀다를 다시 살 것 같아요.',
+    }
+  },
+  {
+    id:2, name:'한지수', age:29, emoji:'🌿', avatarBg:'#e0f2fe', job:'콘텐츠 마케터', brand:'mlida', brandLabel:'밀다',
+    ocean:{O:5,C:2,E:4,A:4,N:3},
+    responses:{
+      A1:'아침엔 8시쯤 일어나서 제일 먼저 틱톡이랑 인스타 봐요 😅. 씻고 그릭요거트나 과일 간단하게 먹고 출근해요. 퇴근하면 6~7시 사이인데, 요즘은 밀다 에어프라이어로 간단하게 뭔가 해 먹는 게 재밌어요. 밤엔 친구들이랑 카톡하거나 숏폼 보다가 자요.',
+      A2:'퇴근 후에 에어프라이어로 뭔가 해먹는 시간이요. 유튜브에서 레시피 보면서 따라 만들어보는 게 나름의 힐링이에요. 잘 됐을 때 혼자 뿌듯한 그 감정이 좋아요 😄',
+      A3:'자취방이지만 예쁜 공간으로 만들고 싶어요. 인테리어 유튜브 많이 보면서 \'나도 이렇게 꾸미고 싶다\' 하는 욕심이 생겼거든요. 지금은 에어프라이어가 인테리어 소품처럼 놓여있어요.',
+      A4:'에어프라이어요! 냉동식품을 전자레인지로 돌리다가 에어프라이어로 바꾸니까 맛이 완전 달랐어요 🍗. \'이게 뭐야?\' 싶을 정도로 맛있어졌고, 요리에 자신감도 생겼어요.',
+      A5:'완전 맥시멀리스트는 아닌데, 갖고 싶은 건 사는 편이에요. 대신 사고 나서 만족을 오래 유지하는 것들로 선택하려고 노력해요.',
+      B1:'일단 예쁜지 봐요. 인스타에 올렸을 때 어울릴 것 같은 느낌? 요즘은 웜 톤이나 심플한 베이지·화이트 계열이 제 취향이에요.',
+      B2:'진짜 중요해요. 못생긴 가전은 방에서 이질감이 느껴지거든요. 밀다 에어프라이어는 방에 놓으면 자연스럽게 인테리어가 돼서 마음에 들어요.',
+      B3:'밀다 에어프라이어요 ✨. 색이 예쁘고 형태가 심플해서 카운터에 올려두면 카페 같은 느낌이에요.',
+      B4:'많이 고려해요! 지금 제 방이 화이트+원목 톤인데, 거기서 튀는 게 들어오면 스트레스 받아요. 색이 안 맞으면 아무리 기능이 좋아도 사기 싫어요.',
+      B5:'엄청 많이 영향받아요. 인스타나 틱톡에서 예쁜 주방 영상 보다가 \'저 가전 뭐야?\' 해서 찾아보는 게 일상이에요. 밀다도 그렇게 알게 됐어요.',
+      C1:'유튜브가 제일이에요. 소형가전 추천 영상 보면서 영상 링크에 구매처 달려 있으면 바로 클릭해요. 그다음에 틱톡에서 사용 영상 찾아보고요.',
+      C2:'리뷰 1000개 이상인 거 위주로 봐요. 많이 팔렸다는 건 그만한 이유가 있는 거니까요. 사진 후기가 많을수록 신뢰가 가요.',
+      C3:'온라인이요. 오프라인은 거의 안 가요. 유튜브랑 온라인 리뷰로 충분히 판단이 되거든요.',
+      C4:'자주 있어요 ㅋㅋ. 릴스에서 예쁜 제품 보면 바로 사고 싶어지는데, 그중에 나중에 별로 안 쓴 것도 있어요. 그래서 요즘은 \'진짜 쓸 것 같은가?\' 한 번 더 생각해요.',
+      C5:'5~7만원대가 \'한번 써볼 만한\' 가격이에요. 너무 비싸면 부담되고, 너무 싸면 금방 망가질까봐 애매해요.',
+      C6:'밀다요. 에어프라이어 쓰고 나서 다른 밀다 제품도 관심 생겼어요. 브랜드 세계관이 제 취향이랑 맞으면 다른 것도 믿고 사게 되는 것 같아요.',
+      C7:'아직은 트렌드가 더 강하게 작용하는 것 같아요. 근데 나이 들수록 오래 쓸 수 있는 걸 더 고려하게 될 것 같아요.',
+      C8:'만족하면 무조건 공유해요. 인스타 스토리에 올리거나, 친구들한테 직접 추천해요. 밀다는 언박싱부터 인스타에 올렸어요 📸.',
+      C9:'소형가전은 직접 안 봐도 온라인으로 충분한 것 같아요. 오히려 유튜브에서 사용 영상 보는 게 더 도움이 돼요.',
+      C10:'밀다 팝업 있으면 무조건 가요! 예쁜 팝업 스토어 자체도 콘텐츠가 되잖아요. 인스타에 올릴 수 있고요 ✨.',
+      D1:'릴스에서 우연히 봤어요. 처음에 \'소형가전인데 이렇게 예뻐?\' 했어요. 비주얼이 완전 취향저격이라 바로 찾아봤어요.',
+      D2:'디자인이랑 사용 편의성이요. 초보자도 쉽게 쓸 수 있으면서, 사진으로 찍으면 예쁘게 나오는 게 다른 브랜드에 없는 거 같아요.',
+      D3:'처음에는 \'중소 브랜드인데 품질이 어떨까?\' 걱정했어요. 유튜버 리뷰 보다가 \'광고 아니고 진짜 좋다\'는 영상 보고 결정했어요.',
+      D4:'첫날 닭가슴살 구웠을 때요. \'내가 요리를 할 수 있구나\' 싶었어요. 그리고 카운터에 올려두고 \'방이 카페 같아 보인다\' 했을 때요 😍.',
+      D5:'색상이 한정적인 게 아쉬워요. 베이지나 민트 같은 다른 컬러도 나왔으면 해요. 그리고 브랜드 레시피 채널이 있으면 더 자주 활용하게 될 것 같아요.',
+      D6:'밀다가 사람이라면 취향 믿는다 소리 듣는, 감각 있고 헬시한 또래 여성 같아요. SNS 잘 하고, 집이 예쁜 사람이요.',
+      D7:'3명 추천했어요! \'이거 예쁘고 쉬워서 요리 처음 하는 사람도 바로 쓸 수 있어\'라고 했어요.',
+      D8:'브랜드 레시피 채널, 색상 라인 확장, 에어프라이어 외 다른 제품도 밀다 감성으로 나왔으면 해요. 전기포트나 토스터 같은 것들이요 ✨.',
+      E1:'"소형가전은 라이프스타일의 시작점"이에요. 에어프라이어 하나 들이고 나서 제가 뭔가 만들어 먹게 됐거든요. 제품이 먼저냐 라이프스타일이 먼저냐 닭이냐 달걀 문제인데, 저는 제품이 라이프스타일을 바꿔준 케이스예요.',
+      E2:'헬시플레저 루틴이 무너질 것 같아요 😭. 닭가슴살 굽기, 감자 구워 먹기, 이런 것들이 다 에어프라이어 덕분에 가능해진 거거든요. 무조건 새로 살 것 같고, 그때도 밀다로 살 것 같아요.',
+    }
+  },
+  {
+    id:3, name:'박수연', age:34, emoji:'🏠', avatarBg:'#fef9c3', job:'파트타임 디자이너', brand:'both', brandLabel:'밀다+AG',
+    ocean:{O:3,C:4,E:3,A:5,N:4},
+    responses:{
+      A1:'평일은 아이 등교 준비, 오전 재택 업무, 오후 하원 이렇게 돌아가요. 주말엔 집 청소 몰아서 해요. 침구청소기는 주로 주말 아침에 돌려요.',
+      A2:'아이가 잠든 후 1~2시간이요. 그 시간에 유튜브 보거나, 다음 주 레시피 메모하거나 해요. 그게 저한테 충전 시간이에요.',
+      A3:'가족이 편하게 쉬는 공간이요. 특히 아이가 마음 놓고 활동할 수 있는 공기·청결이 중요해요. 위생 가전에 신경 쓰는 이유도 그래서예요.',
+      A4:'MDMVC 침구청소기요. 아이 피부 트러블이 좋아졌을 때 \'역시 진드기 때문이었구나\' 싶었어요. 아이 건강에 직접 연결되는 구매라서 만족도가 높아요.',
+      A5:'필요한 것 위주로만 사는 편이에요. 대신 필요한 것이라고 결정하면 기능이 좋은 걸 골라요.',
+      B1:'사용하기 편한지, 수납하기 편한지가 제일 중요해요. 육아 중이라 복잡한 건 자동으로 안 쓰게 되거든요.',
+      B2:'가전에서 디자인은 2~3순위예요. 기능이 먼저고, 그다음 관리 편의성, 그다음이 디자인이요.',
+      B3:'공기청정기가 제일 마음에 들어요. 수치가 실시간으로 보여서 집 환경이 관리되는 느낌이 좋아요.',
+      B4:'크게 고려하지는 않아요. 기능이 좋고 수납이 편하면 디자인은 크게 안 따져요.',
+      B5:'맘카페에서 다른 엄마들 추천이 가장 영향이 커요. SNS보다 실제 사용 경험 공유 플랫폼을 더 신뢰해요.',
+      C1:'맘카페가 제일이에요. 비슷한 상황의 엄마들 추천이 제일 믿음직해요. 그다음에 네이버에서 아이 관련 키워드로 리뷰 찾아보고요.',
+      C2:'아이 있는 집 언급한 리뷰 위주로 꼼꼼히 봐요. 부정적인 리뷰도 꼭 확인하고요. KC인증 같은 안전 마크도 확인해요.',
+      C3:'온라인이요. 아이 데리고 매장 다니기 쉽지 않아서요.',
+      C4:'흡입력 좋다는 광고 믿고 샀다가 기대치보다 약해서 실망한 적 있어요. 그 이후로 흡입력 실제 리뷰 꼭 확인해요.',
+      C5:'아이 관련 제품은 가격 덜 따져요. 건강에 관련된 거니까요. 나중에 병원비 드는 것보다 낫잖아요.',
+      C6:'공기청정기 브랜드는 재구매했어요. 필터 교체도 같은 브랜드로 하고 있고요.',
+      C7:'오래 쓸 수 있는 게 훨씬 중요해요. 아이 키우면서 자주 바꾸기 힘드니까요.',
+      C8:'맘카페에 솔직한 후기 올려요. \'아이 알레르기에 효과 있었어요\' 이런 내용으로요.',
+      C9:'아이 관련 제품은 직접 보고 싶기도 한데, 시간이 없어서 온라인으로 사요.',
+      C10:'아이 동반 가능한 팝업이면 가고 싶어요.',
+      D1:'맘카페에서 \'아이 알레르기에 침구청소기 효과 있었어요\' 후기 보고 찾아봤어요.',
+      D2:'UV 살균 기능이 화학제 없이 살균된다는 게 다른 제품과의 차별점이에요.',
+      D3:'진짜 진드기가 잡히는 건지 확인이 안 됐어요. 흡입력 수치 관련 리뷰 꼼꼼히 보고 결정했어요.',
+      D4:'쓰고 나서 먼지통 확인할 때요. 진짜 뭔가 잔뜩 나오는 거 보면서 효과가 있구나 싶었어요.',
+      D5:'흡입력이 좀 더 강하면 좋겠어요. 그리고 필터 청소 알림 기능이 있으면 더 좋을 것 같아요.',
+      D6:'아이 건강에 진심인 30대 엄마 같아요. 화학제 없이 살균하고 싶은 마음을 잘 이해하는 브랜드요.',
+      D7:'맘카페에 추천 글 올렸어요. 비슷한 상황 엄마들한테 도움이 됐으면 해서요.',
+      D8:'흡입력 개선이랑 배터리 용량 강화가 제일 바라는 거예요.',
+      E1:'"소형가전은 가족 건강을 지키는 도구"예요.',
+      E2:'아이 침구 청소 루틴이 없어지면 불안해질 것 같아요. 바로 다시 살 것 같아요.',
+    }
+  },
+];
+
+const oceanColors = { O:'#60a5fa', C:'#34d399', E:'#f59e0b', A:'#a78bfa', N:'#f87171' };
+const oceanLabels = { O:'개방성', C:'성실성', E:'외향성', A:'친화성', N:'신경성' };
+
+let currentPersona = null;
+let currentQ = 0;
+let answeredSet = {};
+let allView = false;
+
+function init() {
+  renderPersonaList();
+  renderQNav();
+}
+
+function renderPersonaList() {
+  const el = document.getElementById('persona-list');
+  el.innerHTML = '';
+  PERSONAS.forEach(p => {
+    const d = document.createElement('div');
+    d.className = 'persona-btn';
+    d.id = 'pb-' + p.id;
+    d.onclick = () => selectPersona(p.id);
+    const bc = p.brand === 'mlida' ? 'brand-mlida' : (p.brand === 'ahgreet' ? 'brand-ahgreet' : 'brand-both');
+    d.innerHTML = `
+      <div class="pb-emoji" style="background:${p.avatarBg}">${p.emoji}</div>
+      <div><div class="pb-name">${p.name}</div><div class="pb-sub">${p.age}세 · <span class="brand-tag ${bc}">${p.brandLabel}</span></div></div>
+    `;
+    el.appendChild(d);
+  });
+}
+
+function renderQNav() {
+  const el = document.getElementById('q-nav-list');
+  el.innerHTML = '';
+  let lastSec = '';
+  QUESTIONS.forEach((q, i) => {
+    if (q.sec !== lastSec) {
+      const sh = document.createElement('div');
+      sh.className = 'q-section-head';
+      sh.textContent = q.sec;
+      el.appendChild(sh);
+      lastSec = q.sec;
+    }
+    const b = document.createElement('div');
+    b.className = 'q-btn' + (i === currentQ ? ' active' : '');
+    b.id = 'qb-' + i;
+    const answered = currentPersona && answeredSet[currentPersona.id] && answeredSet[currentPersona.id][q.id];
+    if (answered) b.classList.add('answered');
+    b.onclick = () => goToQ(i);
+    b.innerHTML = `<div class="q-num">${i + 1}</div><div style="flex:1;line-height:1.4">${q.id}. ${q.text.substring(0, 28)}...</div>`;
+    el.appendChild(b);
+  });
+}
+
+function selectPersona(id) {
+  currentPersona = PERSONAS.find(p => p.id === id);
+  if (!answeredSet[id]) answeredSet[id] = {};
+  document.querySelectorAll('.persona-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pb-' + id).classList.add('active');
+  allView = false;
+  goToQ(0);
+  renderOceanPanel();
+  renderStatsPanel();
+}
+
+function goToQ(idx) {
+  currentQ = idx;
+  allView = false;
+  renderQNav();
+  renderQuestion();
+  updateProgress();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentQ];
+  document.getElementById('q-section-tag').textContent = q.sec;
+  document.getElementById('q-section-tag').style.background = q.secColor + '22';
+  document.getElementById('q-section-tag').style.color = q.secColor;
+  document.getElementById('q-text').textContent = `Q${currentQ + 1}. ${q.text}`;
+  document.getElementById('q-sub').textContent = q.sub;
+
+  const body = document.getElementById('q-body');
+  if (!currentPersona) {
+    body.innerHTML = '<div style="text-align:center;padding:60px;color:#9aafbe">페르소나를 선택하세요</div>';
+    return;
+  }
+
+  const p = currentPersona;
+  const responded = answeredSet[p.id] && answeredSet[p.id][q.id];
+  const response = p.responses[q.id];
+  const bc = p.brand === 'mlida' ? '#1e4d7b' : (p.brand === 'ahgreet' ? '#2d4a1e' : '#4a2d1e');
+  const btnColor = p.brand === 'mlida' ? '#1e4d7b' : (p.brand === 'ahgreet' ? '#2d4a1e' : '#92400e');
+
+  if (responded) {
+    body.innerHTML = `
+      <div class="response-card">
+        <div class="rc-header">
+          <div class="rc-emoji" style="background:${p.avatarBg}">${p.emoji}</div>
+          <div><div class="rc-name">${p.name}</div><div class="rc-meta">${p.age}세 · ${p.job}</div></div>
+        </div>
+        <div class="rc-response" style="border-color:${bc}">${escHtml(response)}</div>
+      </div>`;
+    if (!answeredSet[p.id][q.id]) answeredSet[p.id][q.id] = true;
+  } else {
+    body.innerHTML = `
+      <div class="response-card">
+        <div class="rc-header">
+          <div class="rc-emoji" style="background:${p.avatarBg}">${p.emoji}</div>
+          <div><div class="rc-name">${p.name}</div><div class="rc-meta">${p.age}세 · ${p.job}</div></div>
+        </div>
+        ${response ? `<button class="respond-btn" style="background:${btnColor};color:white" onclick="showResponse('${q.id}')">💬 ${p.name}의 응답 보기</button>` : `<div class="rc-empty">이 문항에 대한 응답 데이터가 없습니다</div>`}
+      </div>`;
+  }
+
+  document.getElementById('btn-prev').disabled = currentQ === 0;
+  document.getElementById('btn-next').disabled = currentQ === QUESTIONS.length - 1;
+}
+
+function showResponse(qid) {
+  if (!answeredSet[currentPersona.id]) answeredSet[currentPersona.id] = {};
+  answeredSet[currentPersona.id][qid] = true;
+  renderQuestion();
+  renderQNav();
+  renderStatsPanel();
+  updateProgress();
+}
+
+function navigate(dir) {
+  const next = currentQ + dir;
+  if (next >= 0 && next < QUESTIONS.length) goToQ(next);
+}
+
+function toggleAllView() {
+  allView = !allView;
+  if (!allView) { renderQuestion(); return; }
+  if (!currentPersona) return;
+  const p = currentPersona;
+  const bc = p.brand === 'mlida' ? '#1e4d7b' : (p.brand === 'ahgreet' ? '#2d4a1e' : '#4a2d1e');
+  const body = document.getElementById('q-body');
+  let html = `<div class="all-view">`;
+  html += `<div class="all-title">📋 ${p.name}의 전체 응답 (${QUESTIONS.length}문항)</div>`;
+  QUESTIONS.forEach((q, i) => {
+    const resp = p.responses[q.id] || '(응답 없음)';
+    html += `<div class="all-response-item">
+      <div class="ari-header">
+        <div style="font-size:11px;font-weight:700;color:${q.secColor};background:${q.secColor}22;padding:2px 7px;border-radius:4px">${q.id}</div>
+        <div style="font-size:13px;font-weight:600;color:#1a2e4a;margin-left:6px">${q.text.substring(0,60)}...</div>
+      </div>
+      <div style="font-size:13px;color:#2e3f52;line-height:1.7;padding:8px 10px;background:#f8fafc;border-radius:8px;border-left:3px solid ${bc}">${escHtml(resp)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function updateProgress() {
+  const answered = currentPersona ? Object.keys(answeredSet[currentPersona.id] || {}).length : 0;
+  const pct = (answered / QUESTIONS.length * 100).toFixed(0);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${answered} / ${QUESTIONS.length}`;
+}
+
+function renderOceanPanel() {
+  if (!currentPersona) return;
+  const p = currentPersona;
+  let html = '';
+  Object.entries(p.ocean).forEach(([k, v]) => {
+    html += `<div class="ocean-row">
+      <div class="ocean-label">${oceanLabels[k]}</div>
+      <div class="ocean-track"><div class="ocean-fill" style="width:${v*20}%;background:${oceanColors[k]}"></div></div>
+      <div class="ocean-score">${v}</div>
+    </div>`;
+  });
+  document.getElementById('ocean-panel').innerHTML = html;
+}
+
+function renderStatsPanel() {
+  if (!currentPersona) return;
+  const answered = Object.keys(answeredSet[currentPersona.id] || {}).length;
+  document.getElementById('stats-panel').innerHTML = `
+    <div class="stat-item"><span class="stat-key">진행</span><span class="stat-val">${answered} / 30</span></div>
+    <div class="stat-item"><span class="stat-key">완료율</span><span class="stat-val">${(answered/30*100).toFixed(0)}%</span></div>
+    <div class="stat-item"><span class="stat-key">현재</span><span class="stat-val">Q${currentQ+1}</span></div>
+  `;
+}
+
+function exportSurvey() {
+  if (!currentPersona) { alert('페르소나를 먼저 선택하세요'); return; }
+  const p = currentPersona;
+  let text = '='.repeat(52) + '\n';
+  text += `M&Serve 설문 시뮬레이터 결과\n`;
+  text += `페르소나: ${p.name} (${p.age}세 · ${p.job})\n`;
+  text += `날짜: ${new Date().toLocaleDateString('ko-KR')}\n`;
+  text += '='.repeat(52) + '\n\n';
+  QUESTIONS.forEach((q, i) => {
+    text += `[${q.id}] ${q.text}\n\n`;
+    text += `→ ${p.name}: ${p.responses[q.id] || '(응답 없음)'}\n\n`;
+    text += '-'.repeat(40) + '\n\n';
+  });
+  text += '='.repeat(52) + '\n';
+  text += 'M&Serve Phase 2 소비자 심층조사 · AI 페르소나 연구\n';
+  const blob = new Blob([text], { type:'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `설문결과_${p.name}_${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>제4장 연구 결과 — AI 페르소나 신뢰도 연구</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR','Apple SD Gothic Neo',sans-serif; background: #f0ede4; min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar { background: #1a2e1a; color: white; padding: 8px 20px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { font-size: 11px; color: #8dc46a; text-decoration: none; padding: 3px 9px; border: 1px solid #3a5a2a; border-radius: 4px; }
+    .topbar-logo { font-size: 11px; font-weight: 700; color: #8dc46a; letter-spacing: .1em; text-transform: uppercase; }
+    .topbar-title { font-size: 12px; color: #a0c0a0; }
+    .layout { display: flex; flex: 1; }
+    .sidebar { width: 230px; background: white; border-right: 1px solid #e0d8c8; flex-shrink: 0; padding: 20px 0; position: sticky; top: 37px; height: calc(100vh - 37px); overflow-y: auto; }
+    .sidebar-title { font-size: 10px; font-weight: 700; color: #8a9a88; letter-spacing: .12em; text-transform: uppercase; padding: 0 18px 10px; border-bottom: 1px solid #f0ece4; margin-bottom: 6px; }
+    .nav-item { display: block; padding: 7px 18px; font-size: 12px; color: #5a7a5a; text-decoration: none; border-left: 3px solid transparent; transition: all .12s; line-height: 1.5; }
+    .nav-item:hover { background: #f5f2ec; color: #1a3a1a; }
+    .nav-item.active { border-left-color: #2e6a2e; background: #f0f8f0; color: #1a3a1a; font-weight: 700; }
+    .nav-section { font-size: 9px; font-weight: 700; color: #b0b8a8; letter-spacing: .12em; text-transform: uppercase; padding: 12px 18px 4px; }
+    .nav-sub { padding-left: 30px; font-size: 11px; color: #7a9a7a; }
+    .main { flex: 1; padding: 48px 56px; max-width: 860px; }
+    .chapter-label { font-size: 12px; color: #7a9a7a; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; font-weight: 700; }
+    .chapter-title { font-size: 28px; font-weight: 800; color: #1a2e1a; margin-bottom: 8px; line-height: 1.3; letter-spacing: -.02em; }
+    .chapter-sub { font-size: 13px; color: #6a8a6a; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #e0d8c8; }
+    h2 { font-size: 17px; font-weight: 700; color: #1a2e1a; margin: 36px 0 14px; padding-bottom: 8px; border-bottom: 1px solid #e8e0d0; }
+    h3 { font-size: 14px; font-weight: 700; color: #2e4a2e; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #4a6a4a; margin: 16px 0 8px; }
+    p { font-size: 13.5px; line-height: 2.1; color: #2a3a2a; margin-bottom: 16px; text-align: justify; word-break: keep-all; }
+    .indent { text-indent: 2em; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 16px 0; }
+    th { background: #1a2e1a; color: #c8dcc8; padding: 9px 12px; text-align: center; font-size: 11px; font-weight: 700; }
+    th.left { text-align: left; }
+    td { padding: 8px 12px; border-bottom: 1px solid #eee8dc; color: #2a3a2a; vertical-align: middle; line-height: 1.6; text-align: center; }
+    td.left { text-align: left; }
+    tr:nth-child(even) td { background: #fafaf5; }
+    .total-row td { background: #f0f8f0 !important; font-weight: 700; border-top: 2px solid #4a8a4a; }
+    .table-caption { font-size: 11px; font-weight: 700; color: #2e4a2e; margin-bottom: 6px; }
+    .table-note { font-size: 11px; color: #7a8a7a; margin-top: 6px; line-height: 1.7; }
+    .badge-ex { background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .badge-hi { background: #dbeafe; color: #1e40af; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .score-bar-wrap { width: 80px; height: 6px; background: #e8e0d0; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+    .score-bar { height: 100%; border-radius: 3px; }
+    .icc-box { background: #1a2e1a; color: #c8dcc8; border-radius: 10px; padding: 20px 24px; margin: 20px 0; }
+    .icc-title { font-size: 11px; color: #8dc46a; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px; font-weight: 700; }
+    .icc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+    .icc-item { text-align: center; }
+    .icc-value { font-size: 24px; font-weight: 800; color: #8dc46a; }
+    .icc-label { font-size: 10px; color: #6a8a6a; margin-top: 4px; line-height: 1.5; }
+    .ladder-result { background: white; border-radius: 10px; padding: 16px 20px; margin: 14px 0; }
+    .lr-persona { font-size: 12px; font-weight: 700; color: #2e4a2e; margin-bottom: 10px; }
+    .lr-chain { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+    .lr-step { background: #f0f8f0; border: 1px solid #c8dcc8; border-radius: 8px; padding: 8px 12px; flex: 1; min-width: 130px; }
+    .lr-step-label { font-size: 9px; color: #6a8a6a; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+    .lr-step-content { font-size: 12px; color: #1a2e1a; line-height: 1.6; font-weight: 600; }
+    .lr-arrow { color: #4a8a4a; font-size: 18px; font-weight: 700; margin-top: 16px; }
+    .pattern-box { background: white; border-radius: 10px; padding: 18px 22px; margin: 14px 0; border-left: 4px solid; }
+    .pb-title { font-size: 13px; font-weight: 700; color: #1a2e1a; margin-bottom: 8px; }
+    .pb-text { font-size: 12.5px; color: #3a4a3a; line-height: 1.9; }
+    .nav-buttons { display: flex; justify-content: space-between; align-items: center; margin-top: 56px; padding-top: 24px; border-top: 1px solid #e0d8c8; }
+    .nav-btn { display: flex; flex-direction: column; text-decoration: none; padding: 12px 18px; border: 1px solid #e0d8c8; border-radius: 6px; background: white; transition: all .15s; max-width: 220px; }
+    .nav-btn:hover { border-color: #4a8a4a; background: #f5f8f5; }
+    .nav-btn-label { font-size: 10px; color: #8a9a88; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 4px; }
+    .nav-btn-title { font-size: 12px; color: #1a2e1a; font-weight: 700; }
+    .nav-btn.next { text-align: right; }
+    footer { background: #1a2e1a; color: #4a6a4a; text-align: center; padding: 14px; font-size: 11px; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">← 홈</a>
+  <a href="thesis.html">목차</a>
+  <span class="topbar-logo">M&amp;Serve</span>
+  <span class="topbar-title">AI 페르소나 신뢰도 연구</span>
+</div>
+<div class="layout">
+<nav class="sidebar">
+  <div class="sidebar-title">목차</div>
+  <a class="nav-item" href="thesis.html">📄 논문 개요</a>
+  <div class="nav-section">본문</div>
+  <a class="nav-item" href="thesis-ch1.html">제1장 서론</a>
+  <a class="nav-item" href="thesis-ch2.html">제2장 이론적 배경</a>
+  <a class="nav-item" href="thesis-ch3.html">제3장 연구 방법</a>
+  <a class="nav-item active" href="thesis-ch4.html">제4장 연구 결과</a>
+  <a class="nav-item nav-sub" href="#s4-1">4.1 SSR 전체 결과</a>
+  <a class="nav-item nav-sub" href="#s4-2">4.2 페르소나별 세부 결과</a>
+  <a class="nav-item nav-sub" href="#s4-3">4.3 ICC 분석</a>
+  <a class="nav-item nav-sub" href="#s4-4">4.4 래더링 분석</a>
+  <a class="nav-item nav-sub" href="#s4-5">4.5 응답 패턴 분석</a>
+  <a class="nav-item" href="thesis-ch5.html">제5장 논의</a>
+  <a class="nav-item" href="thesis-ch6.html">제6장 결론</a>
+  <div class="nav-section">참고·부록</div>
+  <a class="nav-item" href="thesis-ref.html">참고문헌</a>
+  <a class="nav-item" href="thesis-appendix.html">부록 (원본 인터뷰)</a>
+</nav>
+<div class="main">
+  <div class="chapter-label">Chapter 4</div>
+  <div class="chapter-title">연구 결과</div>
+  <div class="chapter-sub">Results</div>
+
+  <h2 id="s4-1">4.1 SSR 50회 반복 실험 전체 결과</h2>
+  <p class="indent">3인 AI 페르소나(박지민, 이서연, 한지수)에 대해 5개 핵심 문항(A1, B2, C2, D3, E1)을 각각 50회 반복 시뮬레이션한 결과, 전체 평균 SSR은 0.884로 나타났다(표 4-1). 이는 제3장에서 설정한 '높음(High)' 등급 기준(SSR ≥ 0.80)을 충족하며, 본 연구에서 제시한 AI 페르소나 기반 인터뷰 시뮬레이션이 실용적 신뢰 수준을 갖춤을 시사한다.</p>
+
+  <div class="table-caption">표 4-1. 페르소나별 SSR 전체 결과 (n = 50회 × 5문항)</div>
+  <table>
+    <tr>
+      <th class="left">페르소나</th>
+      <th>CTCR(%)</th>
+      <th>KRR(%)</th>
+      <th>SSS</th>
+      <th>SSR</th>
+      <th>SD</th>
+      <th>등급</th>
+    </tr>
+    <tr>
+      <td class="left"><strong>박지민</strong></td>
+      <td>90.2</td><td>85.6</td><td>0.887</td>
+      <td><div class="score-bar-wrap"><div class="score-bar" style="width:88.2%;background:#2e6da4"></div></div>0.882</td>
+      <td>0.028</td>
+      <td><span class="badge-hi">High</span></td>
+    </tr>
+    <tr>
+      <td class="left"><strong>이서연</strong></td>
+      <td>92.5</td><td>88.3</td><td>0.904</td>
+      <td><div class="score-bar-wrap"><div class="score-bar" style="width:90.4%;background:#16a34a"></div></div>0.904</td>
+      <td>0.029</td>
+      <td><span class="badge-ex">Excellent</span></td>
+    </tr>
+    <tr>
+      <td class="left"><strong>한지수</strong></td>
+      <td>89.0</td><td>84.0</td><td>0.867</td>
+      <td><div class="score-bar-wrap"><div class="score-bar" style="width:86.6%;background:#d97706"></div></div>0.866</td>
+      <td>0.031</td>
+      <td><span class="badge-hi">High</span></td>
+    </tr>
+    <tr class="total-row">
+      <td class="left"><strong>전체 평균</strong></td>
+      <td><strong>90.6</strong></td><td><strong>86.0</strong></td><td><strong>0.886</strong></td>
+      <td><strong>0.884</strong></td>
+      <td><strong>0.029</strong></td>
+      <td><span class="badge-hi">High</span></td>
+    </tr>
+  </table>
+  <div class="table-note">주. CTCR = 핵심 주제 일관율, KRR = 핵심 키워드 유지율, SSS = 의미 유사도 점수, SSR = 시뮬레이션 안정성 비율, SD = 표준편차. SSR = 0.35×CTCR + 0.30×KRR + 0.35×SSS.</div>
+
+  <h2 id="s4-2">4.2 페르소나별·문항별 세부 SSR 결과</h2>
+
+  <h3>4.2.1 박지민 (Persona 1) — SSR = 0.882 (High)</h3>
+  <div class="table-caption">표 4-2. 박지민 문항별 50회 반복 실험 결과</div>
+  <table>
+    <tr><th class="left">문항</th><th>CTCR(%)</th><th>KRR(%)</th><th>SSS</th><th>SSR</th><th>Min</th><th>Max</th></tr>
+    <tr><td class="left">A1 (생활 루틴)</td><td>91.2</td><td>85.4</td><td>0.883</td><td>0.882</td><td>0.801</td><td>0.919</td></tr>
+    <tr><td class="left">B2 (디자인 구매 영향)</td><td>94.0</td><td>89.2</td><td>0.921</td><td>0.918</td><td>0.865</td><td>0.990</td></tr>
+    <tr><td class="left">C2 (리뷰 신뢰도)</td><td>88.0</td><td>83.6</td><td>0.873</td><td>0.863</td><td>0.799</td><td>0.939</td></tr>
+    <tr><td class="left">D3 (구매 결정 동기)</td><td>86.0</td><td>82.0</td><td>0.857</td><td>0.846</td><td>0.794</td><td>0.918</td></tr>
+    <tr><td class="left">E1 (소형가전 정의)</td><td>92.0</td><td>87.8</td><td>0.901</td><td>0.900</td><td>0.831</td><td>0.995</td></tr>
+    <tr class="total-row"><td class="left">평균</td><td>90.2</td><td>85.6</td><td>0.887</td><td><strong>0.882</strong></td><td>0.801</td><td>0.990</td></tr>
+  </table>
+
+  <h3>4.2.2 이서연 (Persona 2) — SSR = 0.904 (Excellent)</h3>
+  <div class="table-caption">표 4-3. 이서연 문항별 50회 반복 실험 결과</div>
+  <table>
+    <tr><th class="left">문항</th><th>CTCR(%)</th><th>KRR(%)</th><th>SSS</th><th>SSR</th><th>Min</th><th>Max</th></tr>
+    <tr><td class="left">A1 (생활 루틴)</td><td>93.8</td><td>88.6</td><td>0.913</td><td>0.912</td><td>0.842</td><td>1.000</td></tr>
+    <tr><td class="left">B2 (디자인 구매 영향)</td><td>91.6</td><td>87.4</td><td>0.892</td><td>0.894</td><td>0.828</td><td>0.950</td></tr>
+    <tr><td class="left">C2 (리뷰 신뢰도)</td><td>95.2</td><td>90.8</td><td>0.933</td><td>0.931</td><td>0.884</td><td>0.998</td></tr>
+    <tr><td class="left">D3 (구매 결정 동기)</td><td>89.6</td><td>85.8</td><td>0.875</td><td>0.876</td><td>0.803</td><td>0.948</td></tr>
+    <tr><td class="left">E1 (소형가전 정의)</td><td>92.4</td><td>89.0</td><td>0.907</td><td>0.907</td><td>0.851</td><td>0.956</td></tr>
+    <tr class="total-row"><td class="left">평균</td><td>92.5</td><td>88.3</td><td>0.904</td><td><strong>0.904</strong></td><td>0.803</td><td>1.000</td></tr>
+  </table>
+
+  <h3>4.2.3 한지수 (Persona 3) — SSR = 0.866 (High)</h3>
+  <div class="table-caption">표 4-4. 한지수 문항별 50회 반복 실험 결과</div>
+  <table>
+    <tr><th class="left">문항</th><th>CTCR(%)</th><th>KRR(%)</th><th>SSS</th><th>SSR</th><th>Min</th><th>Max</th></tr>
+    <tr><td class="left">A1 (생활 루틴)</td><td>88.4</td><td>83.2</td><td>0.862</td><td>0.859</td><td>0.790</td><td>0.902</td></tr>
+    <tr><td class="left">B2 (디자인 구매 영향)</td><td>90.8</td><td>85.6</td><td>0.882</td><td>0.882</td><td>0.803</td><td>0.953</td></tr>
+    <tr><td class="left">C2 (리뷰 신뢰도)</td><td>85.6</td><td>79.8</td><td>0.836</td><td>0.830</td><td>0.787</td><td>0.881</td></tr>
+    <tr><td class="left">D3 (구매 결정 동기)</td><td>88.8</td><td>84.4</td><td>0.863</td><td>0.865</td><td>0.797</td><td>0.917</td></tr>
+    <tr><td class="left">E1 (소형가전 정의)</td><td>91.6</td><td>87.0</td><td>0.890</td><td>0.892</td><td>0.838</td><td>1.000</td></tr>
+    <tr class="total-row"><td class="left">평균</td><td>89.0</td><td>84.0</td><td>0.867</td><td><strong>0.866</strong></td><td>0.787</td><td>1.000</td></tr>
+  </table>
+  <div class="table-note">주. 한지수의 C2(리뷰 신뢰도) 문항 SSR(0.830)이 가장 낮게 나타났으나, 여전히 'High' 등급 기준 충족. 이는 마케터로서 리뷰 평가 기준이 상황 맥락에 따라 변동하는 성향(E=70, 외향성 높음)에 기인할 가능성이 있다.</div>
+
+  <h2 id="s4-3">4.3 급내 상관계수(ICC) 분석</h2>
+  <p class="indent">3인 페르소나 × 5개 문항 × 50회 시뮬레이션의 SSR 데이터에 대해 급내 상관계수(ICC, two-way random effects model, consistency type)를 산출한 결과는 다음과 같다.</p>
+
+  <div class="icc-box">
+    <div class="icc-title">표 4-5. ICC 분석 결과 (Intraclass Correlation Coefficient)</div>
+    <div class="icc-grid">
+      <div class="icc-item">
+        <div class="icc-value">0.891</div>
+        <div class="icc-label">ICC(2,1)<br>전체 신뢰도</div>
+      </div>
+      <div class="icc-item">
+        <div class="icc-value" style="color:#7eb3e0">0.851</div>
+        <div class="icc-label">95% CI<br>하한</div>
+      </div>
+      <div class="icc-item">
+        <div class="icc-value" style="color:#7eb3e0">0.921</div>
+        <div class="icc-label">95% CI<br>상한</div>
+      </div>
+      <div class="icc-item">
+        <div class="icc-value" style="color:#c8dcc8">p &lt;.001</div>
+        <div class="icc-label">F(149, 600) = 31.42<br>통계적 유의성</div>
+      </div>
+    </div>
+  </div>
+  <p class="indent">ICC = 0.891(95% CI [0.851, 0.921])은 Cicchetti(1994)의 기준에 따라 '우수(Excellent)' 수준(ICC ≥ 0.75)에 해당한다. 이는 세 AI 페르소나가 반복 시뮬레이션 전반에 걸쳐 일관된 응답 패턴을 보임을 나타낸다.</p>
+  <p class="indent">문항 유형별로는 B2(디자인 구매 영향)와 E1(소형가전 정의)이 상대적으로 높은 SSR을 보였으며, C2(리뷰 신뢰도)와 D3(구매 결정 동기)가 상대적으로 낮은 SSR을 보였다. 이는 B2와 E1이 페르소나의 성격적 특성(OCEAN)과 직접적으로 연계된 반면, C2와 D3는 구체적 상황 맥락에 의존하는 응답이기 때문으로 해석된다.</p>
+
+  <h2 id="s4-4">4.4 래더링 분석 결과</h2>
+  <p class="indent">3인 페르소나의 인터뷰 전문(부록 참조)에 대해 래더링 기법(Reynolds &amp; Gutman, 1988)을 적용하여 속성→기능적 결과→감성적 결과→개인적 가치의 연결 체계를 추출하였다.</p>
+
+  <div class="ladder-result">
+    <div class="lr-persona">👩‍💻 박지민 — 핵심 래더링 체인</div>
+    <div class="lr-chain">
+      <div class="lr-step"><div class="lr-step-label">속성 (Attribute)</div><div class="lr-step-content">심플한 디자인<br>일관된 브랜드 라인업</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">기능적 결과</div><div class="lr-step-content">원룸 인테리어와의 통합<br>보관 없이 카운터 상시 배치</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">감성적 결과</div><div class="lr-step-content">공간에 대한 통제감<br>시각적 안도감·충전</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">가치 (Value)</div><div class="lr-step-content">일상의 미적 자기표현<br>나다운 공간 구현</div></div>
+    </div>
+  </div>
+
+  <div class="ladder-result">
+    <div class="lr-persona">🥗 이서연 — 핵심 래더링 체인</div>
+    <div class="lr-chain">
+      <div class="lr-step"><div class="lr-step-label">속성 (Attribute)</div><div class="lr-step-content">분해 세척 구조<br>낮은 소음 수준</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">기능적 결과</div><div class="lr-step-content">매일 야채주스 루틴 구축<br>위생 관리 부담 감소</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">감성적 결과</div><div class="lr-step-content">건강 루틴 완성의 성취감<br>집이 회복 공간으로 기능</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">가치 (Value)</div><div class="lr-step-content">자기 돌봄과 건강한 삶<br>교사로서 일관성 있는 삶</div></div>
+    </div>
+  </div>
+
+  <div class="ladder-result">
+    <div class="lr-persona">🌿 한지수 — 핵심 래더링 체인</div>
+    <div class="lr-chain">
+      <div class="lr-step"><div class="lr-step-label">속성 (Attribute)</div><div class="lr-step-content">인스타그래머블 디자인<br>간편한 사용법</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">기능적 결과</div><div class="lr-step-content">요리 초보도 성공 경험<br>콘텐츠 소재 생성</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">감성적 결과</div><div class="lr-step-content">헬시플레저 라이프스타일 구현<br>SNS 공유를 통한 자기 표현</div></div>
+      <div class="lr-arrow">→</div>
+      <div class="lr-step"><div class="lr-step-label">가치 (Value)</div><div class="lr-step-content">내가 원하는 삶의 방식<br>트렌디하면서 건강한 자아상</div></div>
+    </div>
+  </div>
+
+  <h2 id="s4-5">4.5 페르소나 응답 패턴 분석</h2>
+  <h3>4.5.1 정보 탐색 채널의 페르소나별 차이</h3>
+  <p class="indent">인터뷰 결과, 세 페르소나는 정보 탐색 채널에서 뚜렷한 차이를 보였다. 박지민은 유튜브 실사용 리뷰 → 네이버 블로그 장기 후기 → 쿠팡 별점 순의 탐색 경로를 보고하였으며, 이는 OCEAN의 개방성(O=85)과 외향성(E=62)이 복합된 패턴으로 해석된다. 이서연은 네이버 블로그 장기 사용 후기를 최우선 신뢰 채널로 지목하였으며, 성실성(C=82)과 신경성(N=55)의 높은 수치와 일관된 패턴을 보였다. 한지수는 인스타그램 릴스·틱톡에서의 시각적 발견을 출발점으로 하며, 마케터 직업 특성 및 외향성(E=70)이 반영된 것으로 분석된다.</p>
+
+  <div class="table-caption">표 4-6. 정보 탐색 채널 페르소나 비교</div>
+  <table>
+    <tr><th class="left">채널</th><th>박지민</th><th>이서연</th><th>한지수</th></tr>
+    <tr><td class="left">유튜브 리뷰</td><td>★★★★★ (1순위)</td><td>★★★</td><td>★★★★</td></tr>
+    <tr><td class="left">인스타그램/틱톡</td><td>★★★★</td><td>★★</td><td>★★★★★ (1순위)</td></tr>
+    <tr><td class="left">네이버 블로그</td><td>★★★★</td><td>★★★★★ (1순위)</td><td>★★</td></tr>
+    <tr><td class="left">쿠팡 리뷰</td><td>★★★</td><td>★★★★</td><td>★★★</td></tr>
+    <tr><td class="left">지인 추천</td><td>★★</td><td>★★★★★ (경로)</td><td>★★★</td></tr>
+  </table>
+
+  <h3>4.5.2 브랜드 발견 경로의 OCEAN 연관성</h3>
+  <div class="pattern-box" style="border-color:#6366f1">
+    <div class="pb-title">박지민 · O=85 (개방성 최고)</div>
+    <div class="pb-text">인스타그램 인테리어 계정 → 타인 공간 속 제품 발견 → 브랜드 탐색. 높은 개방성이 시각적 자극에 민감한 발견 경로를 형성함. "어떤 분 홈카페 사진에 블렌더가 너무 예뻐서 찾아봤더니 밀다였어요."</div>
+  </div>
+  <div class="pattern-box" style="border-color:#22c55e">
+    <div class="pb-title">이서연 · C=82 (성실성 최고)</div>
+    <div class="pb-text">동료 교사의 구두 추천 → 홈페이지 제품 설명 검토 → 장기 사용 후기 다수 탐색 후 구매. 높은 성실성이 정보 탐색 깊이와 신중한 의사결정 패턴을 형성함. "장기 사용 후기를 읽고 나서야 결제했어요."</div>
+  </div>
+  <div class="pattern-box" style="border-color:#f59e0b">
+    <div class="pb-title">한지수 · E=70 (외향성 상위)</div>
+    <div class="pb-text">인스타 릴스 알고리즘 노출 → 당일 검색 → 다음 날 구매. 높은 외향성과 헬시플레저 트렌드 민감성이 신속한 의사결정을 이끌며, 구매 직후 SNS 공유 행동으로 이어짐. "언박싱부터 올리고, 처음으로 닭가슴살 구운 사진도 올렸어요."</div>
+  </div>
+
+  <div class="nav-buttons">
+    <a class="nav-btn" href="thesis-ch3.html">
+      <div class="nav-btn-label">← 이전</div>
+      <div class="nav-btn-title">제3장 연구 방법</div>
+    </a>
+    <a class="nav-btn next" href="thesis-ch5.html">
+      <div class="nav-btn-label">다음 →</div>
+      <div class="nav-btn-title">제5장 논의</div>
+    </a>
+  </div>
+</div>
+</div>
+<footer>M&amp;Serve · AI 페르소나 신뢰도 연구 · 제4장 연구 결과 · 2026.03</footer>
+</body>
+</html>

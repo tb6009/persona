@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인사이트 요약 — M&Serve</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR','Apple SD Gothic Neo',sans-serif; background: #f0f2f5; min-height:100vh; }
+
+    .topbar { background:#1a2e4a; color:white; padding:10px 24px; display:flex; align-items:center; gap:12px; }
+    .topbar a { font-size:11px; color:#7eb3e0; text-decoration:none; padding:3px 10px; border:1px solid #3a5a7a; border-radius:6px; flex-shrink:0; }
+    .topbar-logo { font-size:13px; font-weight:700; letter-spacing:.1em; color:#7eb3e0; text-transform:uppercase; }
+    .topbar-title { font-size:14px; font-weight:600; }
+    .topbar-badge { margin-left:auto; background:#2e6da4; font-size:11px; padding:3px 10px; border-radius:20px; }
+
+    .page-header { background:linear-gradient(135deg,#1a2e4a,#2e4f7a); color:white; padding:36px 32px 28px; }
+    .page-header h1 { font-size:24px; font-weight:800; margin-bottom:8px; }
+    .page-header p { font-size:13px; color:#8aaec8; line-height:1.7; }
+    .header-meta { display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
+    .meta-pill { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:20px; font-size:11px; padding:4px 12px; color:#c0d8ee; }
+
+    .content { padding:32px; max-width:1100px; margin:0 auto; }
+
+    /* KPI */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:36px; }
+    .kpi-card { background:white; border-radius:14px; padding:20px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .kpi-num { font-size:32px; font-weight:900; color:#1a2e4a; }
+    .kpi-unit { font-size:14px; font-weight:600; color:#4a9fe0; }
+    .kpi-label { font-size:11px; color:#9aafbe; margin-top:4px; line-height:1.4; }
+    .kpi-sub { font-size:11px; color:#2f9e44; margin-top:4px; font-weight:600; }
+
+    /* SECTION */
+    .sec-title { font-size:11px; font-weight:700; color:#9aafbe; letter-spacing:.12em; text-transform:uppercase; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid #e8edf2; }
+
+    /* REVIEW INSIGHTS */
+    .review-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:36px; }
+    .review-card { background:white; border-radius:14px; padding:22px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .review-card h3 { font-size:15px; font-weight:700; color:#1a2e4a; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+    .bar-item { margin-bottom:12px; }
+    .bar-label { display:flex; justify-content:space-between; font-size:12px; color:#2e3f52; margin-bottom:4px; }
+    .bar-track { height:8px; background:#eef2f6; border-radius:4px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:4px; transition:width .5s ease; }
+    .bar-note { font-size:11px; color:#9aafbe; margin-top:3px; }
+
+    /* PERSONA INSIGHT CARDS */
+    .persona-insight-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-bottom:36px; }
+    .pi-card { background:white; border-radius:14px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .pi-header { padding:16px 20px; display:flex; align-items:center; gap:12px; }
+    .pi-emoji { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+    .pi-name { font-size:16px; font-weight:700; color:white; }
+    .pi-sub { font-size:11px; color:rgba(255,255,255,.7); margin-top:2px; }
+    .pi-body { padding:16px 20px; }
+    .pi-row { display:flex; gap:8px; padding:6px 0; border-bottom:1px solid #f5f7fa; font-size:12px; }
+    .pi-row:last-child { border-bottom:none; }
+    .pi-key { color:#9aafbe; font-weight:600; width:72px; flex-shrink:0; }
+    .pi-val { color:#2e3f52; line-height:1.5; flex:1; }
+    .ladder-box { background:#f8fafc; border-radius:8px; padding:12px; margin-top:10px; font-size:11px; color:#5a7fa0; line-height:1.8; }
+    .ladder-box strong { color:#1a2e4a; }
+
+    /* SEGMENT */
+    .segment-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:36px; }
+    .seg-card { background:white; border-radius:12px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.05); border-top:4px solid; }
+    .seg-card h4 { font-size:14px; font-weight:700; color:#1a2e4a; margin-bottom:8px; }
+    .seg-pct { font-size:28px; font-weight:900; margin-bottom:6px; }
+    .seg-desc { font-size:12px; color:#7a8fa5; line-height:1.5; }
+    .seg-persona { margin-top:8px; font-size:11px; font-weight:600; }
+
+    /* OPPORTUNITY */
+    .opp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-bottom:36px; }
+    .opp-card { background:white; border-radius:12px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .opp-card h4 { font-size:13px; font-weight:700; color:#1a2e4a; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .opp-item { font-size:12px; color:#5a7fa0; padding:4px 0; border-bottom:1px solid #f5f7fa; line-height:1.5; }
+    .opp-item:last-child { border-bottom:none; }
+    .opp-item::before { content:"→ "; color:#4a9fe0; }
+    .priority-high { background:#fef2f2; border-left:3px solid #ef4444; padding-left:8px; border-radius:4px; margin-bottom:6px; }
+    .priority-mid { background:#fff7ed; border-left:3px solid #f97316; padding-left:8px; border-radius:4px; margin-bottom:6px; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html">← 홈</a>
+  <span class="topbar-logo">M&amp;Serve</span>
+  <span class="topbar-title">인사이트 요약</span>
+  <span class="topbar-badge">Phase 2 · v2.2</span>
+</div>
+
+<div class="page-header">
+  <h1>📊 리서치 인사이트 요약</h1>
+  <p>실제 리뷰 75건 + AI 페르소나 인터뷰 3건(박지민·이서연·한지수) + 7인 페르소나 설계 기반 핵심 발견 사항</p>
+  <div class="header-meta">
+    <span class="meta-pill">📦 MDMVC 침구청소기 리뷰 75건</span>
+    <span class="meta-pill">🤖 AI 심층인터뷰 3인 · 38문항</span>
+    <span class="meta-pill">👥 7인 페르소나</span>
+    <span class="meta-pill">2026.03</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- KPI -->
+  <div style="margin-bottom:12px;" class="sec-title">🔢 핵심 수치</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-num">4.3<span class="kpi-unit">/5</span></div>
+      <div class="kpi-label">평균 별점 (75건)</div>
+      <div class="kpi-sub">★★★★☆ 우수</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num">44<span class="kpi-unit">%</span></div>
+      <div class="kpi-label">3~4인 가족 구매자<br>최다 세그먼트</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num">82<span class="kpi-unit">%</span></div>
+      <div class="kpi-label">UV 살균 기능<br>긍정 언급률</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num">67<span class="kpi-unit">%</span></div>
+      <div class="kpi-label">무선 편의성<br>만족 비율</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num">31<span class="kpi-unit">%</span></div>
+      <div class="kpi-label">흡입력 관련<br>개선 요청 비율</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num">3.8<span class="kpi-unit">/5</span></div>
+      <div class="kpi-label">재구매 의향<br>(7인 페르소나 평균)</div>
+    </div>
+  </div>
+
+  <!-- REVIEW ANALYSIS -->
+  <div class="sec-title" style="margin-bottom:16px;">📦 리뷰 데이터 분석 — MDMVC 침구청소기</div>
+  <div class="review-grid" style="margin-bottom:36px;">
+    <div class="review-card">
+      <h3>⭐ 별점 분포</h3>
+      <div class="bar-item">
+        <div class="bar-label"><span>5점</span><span>52%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:52%;background:#22c55e"></div></div>
+        <div class="bar-note">39건 — UV 살균·흡입력·무선 모두 만족</div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>4점</span><span>28%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:28%;background:#84cc16"></div></div>
+        <div class="bar-note">21건 — 전반적 만족, 일부 소음 언급</div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>3점</span><span>13%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:13%;background:#facc15"></div></div>
+        <div class="bar-note">10건 — 흡입력 기대치 미달</div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>2점 이하</span><span>7%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:7%;background:#ef4444"></div></div>
+        <div class="bar-note">5건 — 배터리·소음 불만</div>
+      </div>
+    </div>
+
+    <div class="review-card">
+      <h3>👨‍👩‍👧 구매자 세그먼트</h3>
+      <div class="bar-item">
+        <div class="bar-label"><span>3~4인 가족 (핵심)</span><span>44%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:44%;background:#3b82f6"></div></div>
+        <div class="bar-note">아이 알레르기·진드기 제거 목적</div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>1인 가구</span><span>27%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:27%;background:#6366f1"></div></div>
+        <div class="bar-note">반려동물 털·간편 청결 목적</div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>2인 가구</span><span>22%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:22%;background:#8b5cf6"></div></div>
+        <div class="bar-note">건강 관리 루틴 형성</div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>5인 이상</span><span>7%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:7%;background:#a78bfa"></div></div>
+        <div class="bar-note">대가족 위생 관리</div>
+      </div>
+    </div>
+
+    <div class="review-card">
+      <h3>🗣️ 주요 언급 키워드</h3>
+      <div class="bar-item">
+        <div class="bar-label"><span>UV 살균 (긍정)</span><span>82%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:82%;background:#10b981"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>무선 편의 (긍정)</span><span>67%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:67%;background:#10b981"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>가벼움 (긍정)</span><span>58%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:58%;background:#10b981"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>흡입력 부족 (불만)</span><span>31%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:31%;background:#ef4444"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>소음 (불만)</span><span>19%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:19%;background:#f97316"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>배터리 (개선 요청)</span><span>15%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:15%;background:#f97316"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERSONA INSIGHTS -->
+  <div class="sec-title" style="margin-bottom:16px;">🤖 AI 페르소나 인터뷰 핵심 인사이트 (3인)</div>
+  <div class="persona-insight-grid" style="margin-bottom:36px;">
+    <!-- 박지민 -->
+    <div class="pi-card">
+      <div class="pi-header" style="background:linear-gradient(135deg,#1e4d7b,#2e6da4);">
+        <div class="pi-emoji" style="background:rgba(255,255,255,.15)">👩‍💻</div>
+        <div>
+          <div class="pi-name">박지민 · 26세</div>
+          <div class="pi-sub">스마트 솔로 · 밀다 에어프라이어+블렌더</div>
+        </div>
+      </div>
+      <div class="pi-body">
+        <div class="pi-row"><span class="pi-key">구매동기</span><span class="pi-val">인스타 디자인 발견 → 릴스에서 확인 → 네이버 리뷰 검증</span></div>
+        <div class="pi-row"><span class="pi-key">결정 키워드</span><span class="pi-val">"원룸에 맞는 슬림한 디자인" + 별점 4.5↑</span></div>
+        <div class="pi-row"><span class="pi-key">만족 포인트</span><span class="pi-val">예쁜 외관, 공간 효율, 기능 충분</span></div>
+        <div class="pi-row"><span class="pi-key">개선 요청</span><span class="pi-val">A/S 정보 명확화, 소재 투명 공개</span></div>
+        <div class="pi-row"><span class="pi-key">브랜드 관계</span><span class="pi-val">재구매 의향 ★★★★☆ · 지인 1명 추천</span></div>
+        <div class="ladder-box">
+          <strong>래더링:</strong> 슬림 디자인 → 원룸 공간 적합 → 집이 예쁘다는 자기만족
+        </div>
+      </div>
+    </div>
+
+    <!-- 이서연 -->
+    <div class="pi-card">
+      <div class="pi-header" style="background:linear-gradient(135deg,#065f46,#059669);">
+        <div class="pi-emoji" style="background:rgba(255,255,255,.15)">🥗</div>
+        <div>
+          <div class="pi-name">이서연 · 31세</div>
+          <div class="pi-sub">건강 루틴형 · 밀다 블렌더</div>
+        </div>
+      </div>
+      <div class="pi-body">
+        <div class="pi-row"><span class="pi-key">구매동기</span><span class="pi-val">지인 추천 → 장기 후기 검증 → 소재 인증 확인</span></div>
+        <div class="pi-row"><span class="pi-key">결정 키워드</span><span class="pi-val">"세척이 편해서 매일 쓸 수 있다"</span></div>
+        <div class="pi-row"><span class="pi-key">만족 포인트</span><span class="pi-val">아침 스무디 루틴 완성, 건강 식습관 형성</span></div>
+        <div class="pi-row"><span class="pi-key">개선 요청</span><span class="pi-val">용량 다양화, 활용 레시피 콘텐츠, 부품 교체</span></div>
+        <div class="pi-row"><span class="pi-key">브랜드 관계</span><span class="pi-val">재구매 의향 ★★★★★ · 지인 2명 추천</span></div>
+        <div class="ladder-box">
+          <strong>래더링:</strong> 세척 편의 → 매일 사용 → 건강 식습관 유지 → 지속가능 소비 실천
+        </div>
+      </div>
+    </div>
+
+    <!-- 한지수 -->
+    <div class="pi-card">
+      <div class="pi-header" style="background:linear-gradient(135deg,#0c4a6e,#0ea5e9);">
+        <div class="pi-emoji" style="background:rgba(255,255,255,.15)">🌿</div>
+        <div>
+          <div class="pi-name">한지수 · 29세</div>
+          <div class="pi-sub">헬시플레저 입문자 · 밀다 에어프라이어</div>
+        </div>
+      </div>
+      <div class="pi-body">
+        <div class="pi-row"><span class="pi-key">구매동기</span><span class="pi-val">릴스 발견 → 유튜브 확인 → 즉시 결정</span></div>
+        <div class="pi-row"><span class="pi-key">결정 키워드</span><span class="pi-val">"인스타그래머블 + 초보도 쉬운 사용성"</span></div>
+        <div class="pi-row"><span class="pi-key">만족 포인트</span><span class="pi-val">헬시플레저 루틴 시작, 콘텐츠 소재</span></div>
+        <div class="pi-row"><span class="pi-key">개선 요청</span><span class="pi-val">브랜드 레시피 채널, 색상 라인 확장</span></div>
+        <div class="pi-row"><span class="pi-key">브랜드 관계</span><span class="pi-val">재구매 의향 ★★★★★ · 지인 3명 추천 · UGC 생성</span></div>
+        <div class="ladder-box">
+          <strong>래더링:</strong> 인스타그래머블 디자인 → 콘텐츠 생성 → 나다운 라이프스타일 표현
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 박수연·기타 페르소나 요약 -->
+  <div class="sec-title" style="margin-bottom:16px;">👥 전체 7인 페르소나 — 구매 동기 요약</div>
+  <div class="review-grid" style="margin-bottom:36px;">
+    <div class="review-card">
+      <h3>🏠 박수연 (가족 건강 지킴이)</h3>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">구매 트리거</span><span style="color:#2e3f52;">아이 피부 트러블 → 집먼지 진드기 의심</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">탐색 채널</span><span style="color:#2e3f52;">맘카페, 아이 관련 후기 집중</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">핵심 니즈</span><span style="color:#2e3f52;">UV 살균 + 화학제 없음 + 가벼운 무선</span></div>
+    </div>
+    <div class="review-card">
+      <h3>🏡 김하은 (인테리어 감성파)</h3>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">구매 트리거</span><span style="color:#2e3f52;">오늘의집 컬러 코디 발견</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">탐색 채널</span><span style="color:#2e3f52;">인스타, 오늘의집 스타일링 사진</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">핵심 니즈</span><span style="color:#2e3f52;">컬러 통일 + 실물=사진 색상 보장</span></div>
+    </div>
+    <div class="review-card">
+      <h3>💍 최민준 (신혼 준비러)</h3>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">구매 트리거</span><span style="color:#2e3f52;">결혼 준비 혼수 리스트</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">탐색 채널</span><span style="color:#2e3f52;">혼수 유튜브, 전문 매장 방문</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">핵심 니즈</span><span style="color:#2e3f52;">내구성 + 세트 구성 + A/S 가능</span></div>
+    </div>
+    <div class="review-card">
+      <h3>👩‍🍳 정소연 (홈쿡 열정가)</h3>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">구매 트리거</span><span style="color:#2e3f52;">셰프 유튜버 추천·쿠킹클래스</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid #f5f7fa;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">탐색 채널</span><span style="color:#2e3f52;">요리 커뮤니티, 전문매장 직접 체험</span></div>
+      <div class="pi-row" style="display:flex;gap:8px;padding:5px 0;font-size:12px;"><span style="color:#9aafbe;width:72px;flex-shrink:0;">핵심 니즈</span><span style="color:#2e3f52;">소재 전문성 + 공식 A/S + 오래 사용</span></div>
+    </div>
+  </div>
+
+  <!-- SEGMENT -->
+  <div class="sec-title" style="margin-bottom:16px;">🎯 5대 소비자 세그먼트</div>
+  <div class="segment-grid" style="margin-bottom:36px;">
+    <div class="seg-card" style="border-color:#3b82f6;">
+      <div class="seg-pct" style="color:#3b82f6;">44%</div>
+      <h4>가족 건강 케어형</h4>
+      <div class="seg-desc">아이 알레르기·피부 트러블 해결 목적. 기능 > 가격. UV 살균 필수</div>
+      <div class="seg-persona" style="color:#3b82f6;">→ 박수연</div>
+    </div>
+    <div class="seg-card" style="border-color:#8b5cf6;">
+      <div class="seg-pct" style="color:#8b5cf6;">27%</div>
+      <h4>1인 가구 실용형</h4>
+      <div class="seg-desc">반려동물 털·간편 청소. 가성비+디자인 동시 추구</div>
+      <div class="seg-persona" style="color:#8b5cf6;">→ 박지민·한지수</div>
+    </div>
+    <div class="seg-card" style="border-color:#10b981;">
+      <div class="seg-pct" style="color:#10b981;">22%</div>
+      <h4>건강 루틴 형성형</h4>
+      <div class="seg-desc">위생 관리 루틴화. 소재 안전성·장기 내구성 중시</div>
+      <div class="seg-persona" style="color:#10b981;">→ 이서연</div>
+    </div>
+    <div class="seg-card" style="border-color:#f59e0b;">
+      <div class="seg-pct" style="color:#f59e0b;">5%</div>
+      <h4>감성·인테리어형</h4>
+      <div class="seg-desc">공간 연출 일부로 청소기 선택. 디자인+기능 동시</div>
+      <div class="seg-persona" style="color:#f59e0b;">→ 김하은</div>
+    </div>
+    <div class="seg-card" style="border-color:#ef4444;">
+      <div class="seg-pct" style="color:#ef4444;">2%</div>
+      <h4>프리미엄 투자형</h4>
+      <div class="seg-desc">고관여·장기 투자 관점. 브랜드 신뢰·AS 필수</div>
+      <div class="seg-persona" style="color:#ef4444;">→ 정소연·최민준</div>
+    </div>
+  </div>
+
+  <!-- OPPORTUNITIES -->
+  <div class="sec-title" style="margin-bottom:16px;">💡 우선순위 기회 영역</div>
+  <div class="opp-grid">
+    <div class="opp-card">
+      <h4>🔴 즉시 대응 필요</h4>
+      <div class="priority-high">
+        <div class="opp-item">흡입력 체감 가능한 수치·영상 증거 제공 (31% 불만)</div>
+      </div>
+      <div class="priority-high">
+        <div class="opp-item">소재·KC인증 정보 상세페이지 전면 배치</div>
+      </div>
+      <div class="priority-high">
+        <div class="opp-item">A/S 정책·센터 정보 명확화</div>
+      </div>
+    </div>
+    <div class="opp-card">
+      <h4>🟠 단기 과제 (1~3개월)</h4>
+      <div class="priority-mid">
+        <div class="opp-item">맘카페 타겟 가족 세그먼트 마케팅 강화</div>
+      </div>
+      <div class="priority-mid">
+        <div class="opp-item">릴스·숏폼 인식 콘텐츠 확대 (한지수 채널)</div>
+      </div>
+      <div class="priority-mid">
+        <div class="opp-item">배터리 사용 시간·소음 개선 또는 명시</div>
+      </div>
+    </div>
+    <div class="opp-card">
+      <h4>🟡 중기 과제 (3~6개월)</h4>
+      <div class="opp-item">브랜드 레시피 채널 운영 (이서연·한지수 니즈)</div>
+      <div class="opp-item">반려동물 세그먼트 전용 콘텐츠 개발</div>
+      <div class="opp-item">오늘의집 브랜드 스토어 강화 (김하은 채널)</div>
+      <div class="opp-item">필터 청소 루틴 알림 기능 검토</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
