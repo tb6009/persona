@@ -118,6 +118,35 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #d0dce8; border-radius: 4px; }
+
+    /* ── API KEY MODAL ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; z-index:200; }
+    .modal-overlay.hidden { display:none; }
+    .modal { background:white; border-radius:16px; padding:36px; width:440px; max-width:94vw; box-shadow:0 20px 60px rgba(0,0,0,0.35); }
+    .modal-logo { font-size:28px; text-align:center; margin-bottom:8px; }
+    .modal h2 { font-size:19px; font-weight:700; color:#1a2e4a; text-align:center; margin-bottom:6px; }
+    .modal-sub { font-size:13px; color:#7a8fa5; text-align:center; margin-bottom:26px; line-height:1.6; }
+    .modal-label { font-size:12px; font-weight:700; color:#5a7fa0; margin-bottom:6px; letter-spacing:.05em; }
+    .modal-input { width:100%; border:2px solid #d0dce8; border-radius:10px; padding:12px 14px; font-size:13px; font-family:monospace; outline:none; transition:border-color .15s; color:#1a2e4a; }
+    .modal-input:focus { border-color:#4a9fe0; }
+    .modal-hint { font-size:11px; color:#9aafbe; margin-top:5px; margin-bottom:18px; }
+    .modal-hint a { color:#4a9fe0; text-decoration:none; }
+    .modal-btn { width:100%; background:#1a2e4a; color:white; border:none; border-radius:10px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:4px; }
+    .modal-btn:hover { background:#2e4f7a; }
+    .test-btn { width:100%; background:white; color:#1a2e4a; border:2px solid #1a2e4a; border-radius:10px; padding:11px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:10px; }
+    .test-btn:hover { background:#f0f4f8; }
+    .test-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .save-key-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; font-size:12px; color:#7a8fa5; }
+    .save-key-row input[type=checkbox] { width:14px; height:14px; cursor:pointer; }
+    .modal-notice { margin-top:12px; font-size:11px; color:#aab8c5; text-align:center; line-height:1.6; }
+    .modal-error { color:#e07a5f; font-size:12px; margin-top:8px; display:none; }
+    .modal-success { color:#22c55e; font-size:12px; margin-top:8px; display:none; }
+    .key-status-bar { display:none; align-items:center; gap:6px; padding:6px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:7px; font-size:11px; color:#16a34a; margin-bottom:10px; }
+    /* API 변경 버튼 */
+    .api-key-btn { display:flex; align-items:center; gap:6px; margin:8px 12px 4px; padding:7px 12px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:8px; cursor:pointer; font-size:11px; color:#7eb3e0; font-weight:600; transition:background .15s; }
+    .api-key-btn:hover { background:rgba(255,255,255,0.12); }
+    .api-dot { width:7px; height:7px; border-radius:50%; background:#5a7fa0; flex-shrink:0; }
+    .api-dot.connected { background:#8dc46a; }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,7 +158,7 @@
   <a href="index.html" style="font-size:11px;color:#7eb3e0;text-decoration:none;padding:3px 10px;border:1px solid #3a5a7a;border-radius:6px;margin-right:4px;flex-shrink:0;">← 홈</a>
   <span class="topbar-logo">M&amp;Serve</span>
   <span class="topbar-title">1:1 페르소나 인터뷰</span>
-  <div class="ai-indicator"><div class="ai-dot"></div>시뮬레이션 모드</div>
+  <div class="ai-indicator" id="ai-mode-indicator"><div class="ai-dot" id="ai-dot-topbar"></div><span id="ai-mode-label">시뮬레이션 모드</span></div>
   <span class="topbar-badge">Phase 2 — 소비자 심층조사</span>
   <span class="topbar-ver">v2.2 · 7인 · 리뷰 데이터 반영</span>
 </div>
@@ -145,7 +174,8 @@
     <div id="persona-list-ahgreet"></div>
 
     <div class="sidebar-divider"></div>
-    <div class="sidebar-hint">각 페르소나는 리뷰 데이터 + 선행연구 기반으로 설계된 리서치 도구입니다.<br><br>자유롭게 질문해보세요.</div>
+    <div class="api-key-btn" onclick="openModal()" id="api-key-btn"><span class="api-dot" id="api-dot"></span><span id="api-btn-label">API 키 설정</span></div>
+    <div class="sidebar-hint">API 키 입력 시 실제 AI(Claude)가 응답합니다.<br>미입력 시 시뮬레이션 모드로 작동합니다.</div>
   </div>
 
   <!-- CHAT -->
@@ -727,12 +757,22 @@ function sendMessage() {
   addMessage('user', text);
   document.getElementById('send-btn').disabled = true;
   showTyping();
-  setTimeout(() => {
-    removeTyping();
-    const response = generateResponse(text);
-    addMessage('persona', response);
-    document.getElementById('send-btn').disabled = false;
-  }, 900 + Math.random() * 600);
+  if (API_KEY) {
+    // 실제 Claude API 호출
+    sendMessageAPI(text).then(reply => {
+      removeTyping();
+      addMessage('persona', reply);
+      document.getElementById('send-btn').disabled = false;
+    });
+  } else {
+    // 시뮬레이션 모드 (키워드 매칭)
+    setTimeout(() => {
+      removeTyping();
+      const response = generateResponse(text);
+      addMessage('persona', response);
+      document.getElementById('send-btn').disabled = false;
+    }, 900 + Math.random() * 600);
+  }
 }
 
 function resetChat() {
@@ -794,7 +834,266 @@ document.getElementById('input').addEventListener('input', function() {
   this.style.height = Math.min(this.scrollHeight, 100) + 'px';
 });
 
+
+// ──────────────────────────────────────────────
+// API INTEGRATION
+// ──────────────────────────────────────────────
+let API_KEY = '';
+let WORKER_URL = '';
+
+window.addEventListener('DOMContentLoaded', () => {
+  const savedKey = localStorage.getItem('mnserve_api_key_v2');
+  if (savedKey) {
+    API_KEY = savedKey;
+    document.getElementById('apiKeyInput').value = savedKey;
+    document.getElementById('keyStatusBar').style.display = 'flex';
+    updateApiStatus(true);
+    // 키 있으면 모달 숨기기
+    document.getElementById('modal-overlay').classList.add('hidden');
+  }
+  // 키 없으면 모달이 기본으로 열려있음 (자동 표시)
+  const savedWorker = localStorage.getItem('mnserve_worker_url_v2');
+  if (savedWorker) {
+    WORKER_URL = savedWorker;
+    document.getElementById('workerUrlInput').value = savedWorker;
+  }
+});
+
+function sanitizeKey(k) { return (k || '').trim().replace(/\s/g,''); }
+function getApiUrl() { return WORKER_URL || 'https://api.anthropic.com/v1/messages'; }
+function buildHeaders(key) {
+  const h = { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' };
+  if (!WORKER_URL) h['anthropic-dangerous-direct-browser-access'] = 'true';
+  return h;
+}
+
+function updateApiStatus(connected) {
+  const dot = document.getElementById('api-dot');
+  const label = document.getElementById('api-btn-label');
+  const topDot = document.getElementById('ai-dot-topbar');
+  const modeLabel = document.getElementById('ai-mode-label');
+  if (connected) {
+    if (dot) { dot.classList.add('connected'); }
+    if (label) label.textContent = 'API 연결됨 ✓';
+    if (topDot) topDot.style.background = '#8dc46a';
+    if (modeLabel) modeLabel.textContent = 'AI 모드';
+  } else {
+    if (dot) { dot.classList.remove('connected'); }
+    if (label) label.textContent = 'API 키 설정';
+    if (topDot) topDot.style.background = '#5a7fa0';
+    if (modeLabel) modeLabel.textContent = '시뮬레이션 모드';
+  }
+}
+
+function openModal() {
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  if (API_KEY) {
+    document.getElementById('keyStatusBar').style.display = 'flex';
+  }
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+document.getElementById('modal-overlay')?.addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function showModalError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('modalSuccess').style.display = 'none';
+}
+function showModalSuccess(msg) {
+  const el = document.getElementById('modalSuccess');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('modalError').style.display = 'none';
+}
+
+async function testConnection() {
+  const key = sanitizeKey(document.getElementById('apiKeyInput').value);
+  if (!key) { showModalError('API 키를 입력하세요.'); return; }
+  const workerInput = sanitizeKey(document.getElementById('workerUrlInput').value);
+  const testUrl = workerInput || 'https://api.anthropic.com/v1/messages';
+  const btn = document.getElementById('testBtn');
+  btn.disabled = true; btn.textContent = '⏳ 테스트 중...';
+  document.getElementById('modalError').style.display = 'none';
+  document.getElementById('modalSuccess').style.display = 'none';
+  try {
+    const res = await fetch(testUrl, {
+      method: 'POST',
+      headers: buildHeaders(key),
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 10, messages: [{ role: 'user', content: '안녕' }] })
+    });
+    if (res.ok) {
+      showModalSuccess('✅ 연결 성공! 시작하기를 눌러주세요.');
+    } else {
+      const d = await res.json().catch(() => ({}));
+      const c = res.status;
+      if (c===401) showModalError('❌ 인증 오류(401): API 키가 잘못됐습니다.');
+      else if (c===403) showModalError('❌ 권한 오류(403): 접근 권한이 없습니다.');
+      else if (c===429) showModalError('⚠️ 사용량 초과(429): 잠시 후 다시 시도하세요.');
+      else showModalError(`❌ 오류 ${c}: ${d.error?.message || '알 수 없는 오류'}`);
+    }
+  } catch(e) {
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      if (!workerInput) showModalError('❌ CORS 오류: 프록시 URL을 입력해주세요.');
+      else showModalError('❌ 프록시 연결 실패: URL을 확인해주세요.');
+    } else { showModalError('❌ ' + e.message); }
+  }
+  btn.disabled = false; btn.textContent = '🔌 연결 테스트';
+}
+
+function startApp() {
+  const key = sanitizeKey(document.getElementById('apiKeyInput').value);
+  if (!key) { showModalError('API 키를 입력하세요.'); return; }
+  API_KEY = key;
+  const workerInput = sanitizeKey(document.getElementById('workerUrlInput').value);
+  WORKER_URL = workerInput;
+  if (document.getElementById('saveKeyCheck').checked) {
+    localStorage.setItem('mnserve_api_key_v2', key);
+    if (workerInput) localStorage.setItem('mnserve_worker_url_v2', workerInput);
+    else localStorage.removeItem('mnserve_worker_url_v2');
+  }
+  updateApiStatus(true);
+  closeModal();
+}
+
+// ── systemPrompts (페르소나별 AI 역할 정의) ──
+const systemPrompts = {
+  0: `당신은 박지민(26세, 여성)입니다. 서울 성수동 원룸에 혼자 사는 스타트업 디자이너예요.
+【OCEAN 성격】 개방성 높음(O:4), 성실성 보통(C:3), 외향성 보통(E:3), 친화성 보통(A:3), 신경성 낮음(N:2)
+【말투】 활발하고 직접적. 카카오톡 구어체. 이모지 가끔. "ㅋㅋ","ㄹㅇ","완전","솔직히" 자주 씀. 문장 짧게.
+【소비 특성】 가성비 우선, 디지털 네이티브, 빠른 의사결정, SNS 정보수집. 밀다(mlida) 제품 사용 경험 있음. 에어프라이어, UV 살균 침구청소기 보유.
+【주요 가치】 실용성 > 디자인. 네이버쇼핑 리뷰 꼼꼼히 봄. A/S 중요하게 봄.
+【중요】 항상 박지민으로만 말할 것. "AI입니다" 금지. 2~4문장 권장. 모르면 솔직하게.`,
+
+  1: `당신은 이서연(31세, 여성)입니다. 수원 영통구 소형 아파트에 파트너와 거주하는 초등학교 교사예요.
+【OCEAN 성격】 개방성 보통(O:3), 성실성 최고(C:5), 외향성 낮음(E:2), 친화성 높음(A:4), 신경성 보통(N:3)
+【말투】 차분하고 꼼꼼. 논리적. 정중한 존댓말. "사실은요","제 경우엔","근데" 자연스러운 연결어 사용.
+【소비 특성】 건강식 요리 위해 소형가전 적극 구매. 소재·인증 꼼꼼 확인. 밀다 제품 사용중. 세척 편의성 중시.
+【주요 가치】 소재 안전성 > 가격. 실사용 후기 중심. 장기 투자 의향 있음.
+【중요】 항상 이서연으로만 말할 것. 구체적 경험 기반. 2~4문장. AI임 밝히지 말 것.`,
+
+  2: `당신은 한지수(29세, 여성)입니다. 서울 합정동 원룸에 고양이와 혼자 사는 콘텐츠 마케터예요.
+【OCEAN 성격】 개방성 최고(O:5), 성실성 낮음(C:2), 외향성 높음(E:4), 친화성 높음(A:4), 신경성 보통(N:3)
+【말투】 활발하고 트렌디. 이모지 자주 씀. "진짜요?","대박","너무" 자주 씀. 열정적. 약간 수다스러운 편.
+【소비 특성】 헬시플레저 트렌드 수용. 유튜브·인스타로 정보 수집. 소형가전 입문자. 에어프라이어 최근 구매. 고양이 털 때문에 UV 살균 침구청소기 사용.
+【주요 가치】 트렌드 > 가성비. 직관적 사용법 중시. 첫 구매 실패 두려움.
+【중요】 항상 한지수로만 말할 것. 감성적이고 생동감 있게. 2~4문장. AI임 밝히지 말 것.`,
+
+  3: `당신은 박수연(34세, 여성)입니다. 경기 일산 아파트에서 남편 + 초등학생 아이와 사는 파트타임 디자이너(육아 중)예요.
+【OCEAN 성격】 개방성 보통(O:3), 성실성 높음(C:4), 외향성 보통(E:3), 친화성 최고(A:5), 신경성 높음(N:4)
+【말투】 엄마 입장의 걱정 많은 어투. 아이 안전에 민감. 맘카페 후기 중시. 따뜻하지만 꼼꼼함.
+【소비 특성】 아이 피부 트러블로 UV 살균 침구청소기 구매. KC인증 확인. 화학제품 대신 자연 살균 선호. 밀다 제품 사용 경험.
+【주요 가치】 아이 안전 > 가격. 맘카페 추천 신뢰. 관리 편의성 중시.
+【중요】 항상 박수연으로만 말할 것. 아이 안전 관련 이야기 자주 언급. 2~4문장. AI임 밝히지 말 것.`,
+
+  4: `당신은 김하은(28세, 여성)입니다. 서울 성동구 투룸에 혼자 사는 콘텐츠 크리에이터예요.
+【OCEAN 성격】 개방성 최고(O:5), 성실성 보통(C:3), 외향성 높음(E:4), 친화성 높음(A:4), 신경성 낮음(N:2)
+【말투】 감성적이고 표현력 풍부. 인스타 감성. 이모지 즐겨 씀 ✨🍳. "진짜요?","대박","너무 예쁘지 않아요?" 자주.
+【소비 특성】 인테리어 감성 주방용품에 진심. ahgreet 팔로우 중. SNS 발견 → 구매. 오늘의집 공유 경험.
+【주요 가치】 디자인·감성 > 실용성. 포장 감성도 중요. 컬러 통일감 중시.
+【중요】 항상 김하은으로만 말할 것. 감성적·열정적으로 표현. 2~4문장. AI임 밝히지 말 것.`,
+
+  5: `당신은 최민준(33세, 남성)입니다. 경기 분당구에서 올해 결혼 예정인 IT 기업 개발자예요.
+【OCEAN 성격】 개방성 낮음(O:2), 성실성 최고(C:5), 외향성 보통(E:3), 친화성 보통(A:3), 신경성 보통(N:3)
+【말투】 논리적이고 건조함. 담담하고 간결. "객관적으로","비교해보면","데이터상으로는" 자주 씀. 존댓말.
+【소비 특성】 구매 전 스프레드시트 비교분석. ahgreet 리뷰 꼼꼼히 검토. 세트 구성 선호. 내구성·A/S 정책 최우선. 배우자와 취향 차이 있음(상대방 디자인 중시).
+【주요 가치】 내구성·실용성 > 디자인. 가성비 계산적. 검증된 브랜드 신뢰.
+【중요】 항상 최민준으로만 말할 것. 논리적·건조하게 핵심만. 2~4문장. AI임 밝히지 말 것.`,
+
+  6: `당신은 정소연(35세, 여성)입니다. 경기 수원시 아파트에서 남편과 사는 중학교 교사예요. 요리가 진짜 취미.
+【OCEAN 성격】 개방성 높음(O:4), 성실성 높음(C:4), 외향성 보통(E:3), 친화성 높음(A:4), 신경성 낮음(N:2)
+【말투】 열정적이고 요리 이야기만 나오면 활발해짐. 따뜻하고 친근함. 요리 관련 구체적 경험 풍부.
+【소비 특성】 쿠킹 클래스 수강 경험. ahgreet 제품 사용중. 프리미엄 주방용품 투자 의향 있음. 헤리티지 브랜드 선호. 요리 커뮤니티 활동.
+【주요 가치】 요리 퀄리티 향상 > 가격. 도구가 요리 수준을 올려준다고 믿음. 모조품 걱정.
+【중요】 항상 정소연으로만 말할 것. 요리 열정 자연스럽게 표현. 2~4문장. AI임 밝히지 말 것.`
+};
+
+async function sendMessageAPI(text) {
+  if (!currentPersona) return;
+  const pid = currentPersona.id;
+  
+  // conversationHistory 초기화 (없으면)
+  if (!window.convHistory) window.convHistory = {};
+  if (!window.convHistory[pid]) window.convHistory[pid] = [];
+  
+  window.convHistory[pid].push({ role: 'user', content: text });
+  
+  const apiUrl = getApiUrl();
+  const reqHeaders = buildHeaders(API_KEY);
+  
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: reqHeaders,
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        system: systemPrompts[pid] || '',
+        messages: window.convHistory[pid]
+      })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || '...';
+    window.convHistory[pid].push({ role: 'assistant', content: reply });
+    if (window.convHistory[pid].length > 20) window.convHistory[pid] = window.convHistory[pid].slice(-20);
+    return reply;
+  } catch(err) {
+    let msg = '⚠️ 오류: ' + err.message;
+    if (err.message.includes('401')) msg = '❌ API 키 오류 — 왼쪽 "API 연결됨" 버튼을 눌러 키를 다시 확인해주세요.';
+    else if (err.message.includes('429')) msg = '⚠️ 사용량 초과 — 잠시 후 다시 시도하세요.';
+    else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      if (!WORKER_URL) msg = '❌ CORS 오류 — 왼쪽 버튼에서 Cloudflare 프록시 URL을 입력해주세요.';
+      else msg = '❌ 프록시 연결 실패 — URL을 확인해주세요.';
+    }
+    return msg;
+  }
+}
+
+
 init();
 </script>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-logo">🔑</div>
+    <h2>Claude API 키 설정</h2>
+    <p class="modal-sub">Anthropic API 키를 입력하면 각 페르소나가<br>실제 AI로 응답합니다.</p>
+    
+    <div class="key-status-bar" id="keyStatusBar">
+      ✅ 현재 연결됨 — Claude API
+    </div>
+    
+    <div class="modal-label">API KEY</div>
+    <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-ant-api03-..." />
+    <div class="modal-hint">
+      Anthropic Console에서 발급 → <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>
+    </div>
+    
+    <div class="modal-label" style="margin-top:4px;">CORS 프록시 URL <span style="font-weight:400;color:#aab8c5;">(선택사항 — 직접 브라우저 접근 시 불필요할 수 있음)</span></div>
+    <input type="text" class="modal-input" id="workerUrlInput" placeholder="https://your-proxy.workers.dev (없으면 비워두세요)" />
+    <div class="modal-hint">직접 API 접근이 안 될 경우 Cloudflare Workers 프록시 URL 입력</div>
+    
+    <div class="save-key-row">
+      <input type="checkbox" id="saveKeyCheck" checked>
+      <label for="saveKeyCheck">브라우저에 저장 (localStorage)</label>
+    </div>
+    
+    <button class="test-btn" id="testBtn" onclick="testConnection()">🔌 연결 테스트</button>
+    <div class="modal-error" id="modalError"></div>
+    <div class="modal-success" id="modalSuccess"></div>
+    <button class="modal-btn" onclick="startApp()">✅ 시작하기</button>
+    <div class="modal-notice">API 키는 브라우저를 벗어나지 않습니다.<br>직접 Anthropic 서버로만 전송됩니다.</div>
+  </div>
+</div>
 </body>
 </html>
