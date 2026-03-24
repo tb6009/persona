@@ -76,6 +76,21 @@
     .dot-purple { background: #7c3aed; }
     .dot-gray { background: #9aafbe; }
     footer { background: #1a2e4a; color: #5a7fa0; text-align: center; padding: 18px; font-size: 12px; }
+
+  /* ── API 설정 배너 ── */
+  .api-banner { background: #1a2e4a; border-radius: 14px; padding: 20px 24px; margin-bottom: 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .api-banner-icon { font-size: 22px; flex-shrink: 0; }
+  .api-banner-info { flex: 1; min-width: 200px; }
+  .api-banner-title { font-size: 13px; font-weight: 700; color: #7eb3e0; margin-bottom: 4px; letter-spacing: 0.05em; }
+  .api-banner-desc { font-size: 12px; color: #4a7fa0; }
+  .api-inputs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .api-input { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; font-size: 12px; font-family: monospace; color: #e0eaf5; outline: none; width: 260px; }
+  .api-input::placeholder { color: #3a5a7a; }
+  .api-input:focus { border-color: #4a9fe0; }
+  .api-save-btn { background: #4a9fe0; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .api-save-btn:hover { background: #2e7ec0; }
+  .api-status { font-size: 11px; margin-top: 6px; color: #4a7fa0; }
+  .api-status.connected { color: #8dc46a; }
   </style>
 </head>
 <body>
@@ -201,7 +216,25 @@
   </div>
 
   <div class="section-label">🗂 전체 페이지 목록 (사이트맵)</div>
-  <div class="sitemap-wrap">
+  
+<!-- API 설정 배너 -->
+<div class="api-banner" id="api-banner">
+  <div class="api-banner-icon">🔑</div>
+  <div class="api-banner-info">
+    <div class="api-banner-title">CLAUDE API 설정</div>
+    <div class="api-banner-desc">한 번 저장하면 인터뷰 페이지에서 바로 사용돼요</div>
+  </div>
+  <div>
+    <div class="api-inputs">
+      <input type="password" class="api-input" id="idx-api-key" placeholder="sk-ant-api03-..." />
+      <input type="text" class="api-input" id="idx-proxy-url" placeholder="프록시 URL (없으면 비워두세요)" style="width:220px;" />
+      <button class="api-save-btn" onclick="saveApiSettings()">저장</button>
+    </div>
+    <div class="api-status" id="api-status-msg">저장된 키 없음</div>
+  </div>
+</div>
+
+<div class="sitemap-wrap">
     <div class="sitemap-grid">
       <div>
         <div class="sitemap-col-title">🛠 리서치 도구</div>
@@ -237,5 +270,38 @@
 
 <footer>M&amp;Serve × 밀다·ahgreet — AI 페르소나 스터디 · Phase 2 소비자 심층조사 · 리뷰 데이터 반영 v2.2 · 2026.03</footer>
 
+
+<script>
+(function() {
+  const keyEl = document.getElementById('idx-api-key');
+  const proxyEl = document.getElementById('idx-proxy-url');
+  const statusEl = document.getElementById('api-status-msg');
+
+  // 저장된 값 불러오기
+  const saved = localStorage.getItem('mnserve_api_key_v2');
+  const savedProxy = localStorage.getItem('mnserve_worker_url_v2');
+  if (saved) {
+    keyEl.value = saved;
+    statusEl.textContent = '✅ API 키 저장됨 — 인터뷰 페이지에서 자동 적용';
+    statusEl.className = 'api-status connected';
+  }
+  if (savedProxy) proxyEl.value = savedProxy;
+
+  window.saveApiSettings = function() {
+    const key = keyEl.value.trim().replace(/\s/g,'');
+    const proxy = proxyEl.value.trim();
+    if (!key) {
+      statusEl.textContent = '⚠️ API 키를 입력해주세요';
+      statusEl.className = 'api-status';
+      return;
+    }
+    localStorage.setItem('mnserve_api_key_v2', key);
+    if (proxy) localStorage.setItem('mnserve_worker_url_v2', proxy);
+    else localStorage.removeItem('mnserve_worker_url_v2');
+    statusEl.textContent = '✅ 저장 완료 — 인터뷰 페이지에서 자동 적용됩니다';
+    statusEl.className = 'api-status connected';
+  };
+})();
+</script>
 </body>
 </html>
